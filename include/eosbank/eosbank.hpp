@@ -25,7 +25,7 @@ namespace eosbank {
             uint64_t primary_key() const { return id; }
          };
 
-         struct [[eosio::table]] loan {
+         struct [[eosio::table]] loan_table {
             uint64_t id;
             name     debtor;
             asset    collateralAmount;
@@ -36,6 +36,20 @@ namespace eosbank {
          };
 
          typedef eosio::multi_index< "config"_n, config_table > config;
+         typedef eosio::multi_index< "loan"_n, loan_table > loan;
+
+         enum LoanState {
+            ACTIVE,
+            UNDER_LIQUIDATION,
+            LIQUIDATED,
+            SETTLED
+         };
+
+         enum Types {
+            EOS_PRICE,
+            DEPOSIT_RATE,
+            LIQUIDATION_DURATION
+         }
 
          void init();
          void is_pausing();

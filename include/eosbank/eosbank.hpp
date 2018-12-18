@@ -13,6 +13,18 @@ namespace eosbank {
          using contract::contract;
 
       private:
+         float eosPrice; // for global usage
+         const char *INVALID_ADDRESS = "INVALID_ADDRESS";
+         const char *ONLY_ORACLES = "ONLY_ORACLE";
+         const char *INVALID_AMOUNT = "INVALID_AMOUNT";
+         const char *COLLATERAL_NOT_ENOUGH = "COLLATERAL_NOT_ENOUGH";
+         const char *ONLY_LOAN_OWNER = "ONLY_LOAN_OWNER";
+         const char *NOT_ENOUGH_ALLOWANCE = "NOT_ENOUGH_ALLOWANCE";
+         const char *NOT_ACTIVE_LOAN = "NOT_ACTIVE_LOAN";
+         const char *ENOUGH_COLLATERAL = "ENOUGH_COLLATERAL";
+         const char *ONLY_LIQUIDATOR = "ONLY_LIQUIDATOR";
+         const char *NOT_CONFIG_YET = "Contract is Not Config Yet";
+
          struct [[eosio::table]] config_table {
             uint64_t id;
             bool     pause;

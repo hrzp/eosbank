@@ -12,6 +12,24 @@ namespace eosbank {
       public:
          using contract::contract;
 
+         [[eosio::action]]
+         void setconfig( bool      pause,
+                         name      oracleAddress,
+                         name      liquidatorAdd,
+                         float     eosPrice,
+                         float     depositRate,
+                         uint32_t  LIQUIDATION_DURATION);
+
+         [[eosio::action]]
+         void chargeasset( name   from,
+                           asset  quantity);
+
+         [[eosio::action]]
+         void geteos( name   from,
+                      name   to,
+                      asset  quantity,
+                      string memo);
+
       private:
          float eosPrice; // for global usage
          const char *INVALID_ADDRESS = "INVALID_ADDRESS";
@@ -44,11 +62,19 @@ namespace eosbank {
             asset    amount;
             uint8_t  state;
 
-            uint64_t primary_key() const { return debtor.value; }
+            uint64_t primary_key() const { return id; }
+         };
+
+         struct [[eosio::table]] trust_fund {
+            name     user;
+            asset    fund;
+
+            uint64_t primary_key() const { return user.value; }
          };
 
          typedef eosio::multi_index< "config"_n, config_table > config;
          typedef eosio::multi_index< "loan"_n, loan_table > loan;
+         typedef eosio::multi_index< "trustfund"_n, trust_fund > trustfund;
 
          enum LoanState {
             ACTIVE,
@@ -65,6 +91,7 @@ namespace eosbank {
 
          void init();
          void is_pausing();
+
    };
 
 } /// namespace eosbank

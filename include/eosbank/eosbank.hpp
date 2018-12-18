@@ -14,7 +14,7 @@ namespace eosbank {
 
       private:
          struct [[eosio::table]] config_table {
-            uint64_t key;
+            uint64_t id;
             bool     pause;
             name     oracleAddress;
             name     liquidatorAdd;
@@ -22,7 +22,17 @@ namespace eosbank {
             float    depositRate;
             uint64_t liquidationDuration; // better to be in uint32
 
-            uint64_t primary_key() const { return key; }
+            uint64_t primary_key() const { return id; }
+         };
+
+         struct [[eosio::table]] loan {
+            uint64_t id;
+            name     debtor;
+            asset    collateralAmount;
+            asset    amount;
+            uint8_t  state;
+
+            uint64_t primary_key() const { return debtor.value; }
          };
 
          typedef eosio::multi_index< "config"_n, config_table > config;

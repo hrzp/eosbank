@@ -1,10 +1,15 @@
+// #pragma once
+
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
 
 #include <string>
 
+namespace eosiosystem {
+   class system_contract;
+}
 
-namespace eosbank {
+namespace eosio {
 
    using std::string;
 
@@ -32,10 +37,11 @@ namespace eosbank {
 
          [[eosio::action]]
          void getloan( name   user,
-                      float  quantity);
+                      asset  amount,
+                      asset collateral);
 
          [[eosio::action]]
-         void increasecollatral( name user,
+         void inccollatral( name user,
                                  uint64_t loanid,
                                  asset amount);
 
@@ -90,21 +96,21 @@ namespace eosbank {
          typedef eosio::multi_index< "trustfund"_n, trust_fund > trustfund;
 
          enum LoanState {
-            ACTIVE,
+            ACTIVE = 0,
             UNDER_LIQUIDATION,
             LIQUIDATED,
             SETTLED
          };
 
          enum Types {
-            EOS_PRICE,
+            EOS_PRICE = 0,
             DEPOSIT_RATE,
             LIQUIDATION_DURATION
-         }
+         };
 
          void init();
          void is_pausing();
-         void enough_collateral( name user, float amount );
+         void enough_collateral( name user, asset amount, asset collateral );
 
    };
 

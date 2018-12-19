@@ -1,15 +1,16 @@
 
 #include <eosbank/eosbank.hpp>
+#include <eosiolib/asset.hpp>
 
-namespace eosbank {
+namespace eosio {
 
-eosbank(  name        receiver,
-          name        code,
-          datastream  <const char*> ds):
-          contract( receiver, code, ds )
-{
-  init();
-}
+// eosbank::eosbank(  name        receiver,
+//           name        code,
+//           datastream  <const char*> ds):
+//           contract( receiver, code, ds )
+// {
+//   init();
+// }
 
 
 void bank::init()
@@ -44,7 +45,7 @@ void bank::setconfig( bool      pause,
     auto iterator = _config.find( 0 );
     if( iterator == _config.end() ) {
         _config.emplace(_code, [&]( auto& row ) {
-            row.key = 0;
+            row.id = 0;
             row.pause = pause;
             row.oracleAddress = oracleAddress;
             row.liquidatorAdd = liquidatorAdd;
@@ -116,13 +117,12 @@ void bank::getloan( name user,
     require_auth( user );
 
     enough_collateral( user, amount, collateral );
-    asset myt = asset( amount, MYT_SYMBOL );
-
+    // TODO: check for correct symbol
 
     // update the user used value of her/his collaterals
-    trust_fund trustfund( _code, _code.value );
-    auto iterator = trustfund.find( from.value );
-    trust_fund.modify(iterator, _code, [&]( auto& row ) {
+    trustfund fund( _code, _code.value );
+    auto iterator = fund.find( user.value );
+    fund.modify(iterator, _code, [&]( auto& row ) {
         row.used += collateral;
     });
 
@@ -132,8 +132,8 @@ void bank::getloan( name user,
         row.id = _loan.available_primary_key();
         row.debtor = user;
         row.collateralAmount = collateral;
-        row.amount = myt;
-        row.state = LoanState.ACTIVE;
+        row.amount = amount;
+        row.state = ACTIVE;
     });
 
     // issue token for user
@@ -141,12 +141,12 @@ void bank::getloan( name user,
         permission_level{ get_self(),"active"_n },
         "myteostoken"_n, // TODO: declare in config
         "issue"_n,
-        std::make_tuple( user, myt, std::string("LOAN ISSUED") )
+        std::make_tuple( user, amount, std::string("LOAN ISSUED") )
     ).send();
 }
 
 
-void bank::increasecollatral( name user, uint64_t loanid, asset amount )
+void bank::inccollatral( name user, uint64_t loanid, asset amount )
 {
     require_auth(user);
 
@@ -157,13 +157,13 @@ void bank::increasecollatral( name user, uint64_t loanid, asset amount )
 
     // check for loan owner and state
     const auto& item = _loan.get( loanid );
-    eosio_assert ( item.id == loanid, ONLY_LOAN_OWNER )
-    eosio_assert ( item.state == LoanState.ACTIVE, NOT_ACTIVE_LOAN );
+    eosio_assert ( item.id == loanid, ONLY_LOAN_OWNER );
+    eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN );
 
     // check for enoght collatral in trust fund
     trustfund fund( _code, _code.value );
     const auto& fund_item = fund.get( user.value );
-    eosio_assert ( fund_item.asset >= (fund_item.used + amount), COLLATERAL_NOT_ENOUGH );// use diffrent error
+    eosio_assert ( fund_item.fund >= (fund_item.used + amount), COLLATERAL_NOT_ENOUGH );// use diffrent error
 
     auto edit_fund = fund.find( user.value );
     fund.modify(edit_fund, _code, [&]( auto& row ) {
@@ -177,16 +177,17 @@ void bank::increasecollatral( name user, uint64_t loanid, asset amount )
 }
 
 
-bool bank::enough_collateral( name user, asset amount, asset collateral ) {
+void bank::enough_collateral( name user, asset amount, asset collateral ) {
     trustfund fund( _code, _code.value );
     const auto& item = fund.get( user.value );
-    eosio_assert ( item.asset >= (item.used + collateral), COLLATERAL_NOT_ENOUGH );// use diffrent error
+    eosio_assert ( item.fund >= (item.used + collateral), COLLATERAL_NOT_ENOUGH );// use diffrent error
 
     config _config( _code, _code.value );
     const auto& cnf = _config.get( user.value );
 
-    eosio_assert ( item == fund.end(), "YOU HAVENT ANY ASSET" );
-    eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
+    auto item_check = fund.find( user.value );
+    eosio_assert ( item_check == fund.end(), "YOU HAVENT ANY ASSET" );
+    eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount.amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
 }
 
 
@@ -196,18 +197,24 @@ bool bank::enough_collateral( name user, asset amount, asset collateral ) {
 extern "C" {
     void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
         if (action == "transfer"_n.value && code == "eosio.token"_n.value) {
-            eosio::execute_action(name(receiver), name(code), &eosdoller::geteos);
+            eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::bank::geteos);
         }
         else if ( code == "eosbankzloan"_n.value ) { // code name should set in configs
-            if( action == name( "chargeasset" ).value ) {
-                execute_action( name(receiver), name(code), &eosdoller::chargeasset );
+            if( action == eosio::name( "chargeasset" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::chargeasset );
             }
-            else if( action == name( "setconfig" ).value ) {
-                execute_action( name(receiver), name(code), &eosdoller::setconfig );
+            else if( action == eosio::name( "setconfig" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setconfig );
             }
-            else if( action == name( "getloan" ).value ) {
-                execute_action( name(receiver), name(code), &eosdoller::getloan );
+            else if( action == eosio::name( "getloan" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getloan );
+            }
+            else if( action == eosio::name( "inccollatral" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::inccollatral );
             }
         }
     }
 }
+
+
+// EOSIO_DISPATCH( eosio::bank, (geteos))

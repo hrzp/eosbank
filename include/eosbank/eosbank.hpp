@@ -34,6 +34,11 @@ namespace eosbank {
          void getloan( name   user,
                       float  quantity);
 
+         [[eosio::action]]
+         void increasecollatral( name user,
+                                 uint64_t loanid,
+                                 asset amount);
+
 
       private:
          #define MYT_SYMBOL symbol( "MYT", 4 )

@@ -133,7 +133,7 @@ void bank::getloan( name user,
         row.debtor = user;
         row.collateralAmount = collateral;
         row.amount = myt;
-        row.state = ACTIVE;
+        row.state = LoanState.ACTIVE;
     });
 
     // issue token for user
@@ -143,6 +143,37 @@ void bank::getloan( name user,
         "issue"_n,
         std::make_tuple( user, myt, std::string("LOAN ISSUED") )
     ).send();
+}
+
+
+void bank::increasecollatral( name user, uint64_t loanid, asset amount )
+{
+    require_auth(user);
+
+    // check for loan exsisted
+    loan _loan( _code, _code.value );
+    auto iterator = _loan.find( loanid );
+    eosio_assert ( iterator != _loan.end(), "LOAN NOT FOUND" );
+
+    // check for loan owner and state
+    const auto& item = _loan.get( loanid );
+    eosio_assert ( item.id == loanid, ONLY_LOAN_OWNER )
+    eosio_assert ( item.state == LoanState.ACTIVE, NOT_ACTIVE_LOAN );
+
+    // check for enoght collatral in trust fund
+    trustfund fund( _code, _code.value );
+    const auto& fund_item = fund.get( user.value );
+    eosio_assert ( fund_item.asset >= (fund_item.used + amount), COLLATERAL_NOT_ENOUGH );// use diffrent error
+
+    auto edit_fund = fund.find( user.value );
+    fund.modify(edit_fund, _code, [&]( auto& row ) {
+        row.used += amount;
+    });
+
+    // Add collatral to loan
+    _loan.modify(iterator, _code, [&]( auto& row ) {
+        row.collateralAmount += amount;
+    });
 }
 
 

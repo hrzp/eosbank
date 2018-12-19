@@ -30,7 +30,14 @@ namespace eosbank {
                       asset  quantity,
                       string memo);
 
+         [[eosio::action]]
+         void getloan( name   user,
+                      float  quantity);
+
+
       private:
+         #define MYT_SYMBOL symbol( "MYT", 4 )
+         #define EOS_SYMBOL symbol( "EOS", 4 )
          float eosPrice; // for global usage
          const char *INVALID_ADDRESS = "INVALID_ADDRESS";
          const char *ONLY_ORACLES = "ONLY_ORACLE";
@@ -68,6 +75,7 @@ namespace eosbank {
          struct [[eosio::table]] trust_fund {
             name     user;
             asset    fund;
+            asset    used;
 
             uint64_t primary_key() const { return user.value; }
          };
@@ -91,6 +99,7 @@ namespace eosbank {
 
          void init();
          void is_pausing();
+         void enough_collateral( name user, float amount );
 
    };
 

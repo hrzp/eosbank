@@ -76,7 +76,6 @@ void bank::geteos( name    from,
     if ( from == get_self() )
         return;
 
-    #define EOS_SYMBOL symbol( "EOS", 4 )
     if ( quantity.symbol != EOS_SYMBOL )
         return;
 
@@ -110,6 +109,56 @@ void bank::chargeasset( name    from,
 }
 
 
+void bank::getloan( name user,
+                    asset amount,
+                    asset collateral)
+{
+    require_auth( user );
+
+    enough_collateral( user, amount, collateral );
+    asset myt = asset( amount, MYT_SYMBOL );
+
+
+    // update the user used value of her/his collaterals
+    trust_fund trustfund( _code, _code.value );
+    auto iterator = trustfund.find( from.value );
+    trust_fund.modify(iterator, _code, [&]( auto& row ) {
+        row.used += collateral;
+    });
+
+    // submit a loan for user
+    loan _loan( _code, _code.value );
+    _loan.emplace(_code, [&]( auto& row ) {
+        row.id = _loan.available_primary_key();
+        row.debtor = user;
+        row.collateralAmount = collateral;
+        row.amount = myt;
+        row.state = ACTIVE;
+    });
+
+    // issue token for user
+    action(
+        permission_level{ get_self(),"active"_n },
+        "myteostoken"_n, // TODO: declare in config
+        "issue"_n,
+        std::make_tuple( user, myt, std::string("LOAN ISSUED") )
+    ).send();
+}
+
+
+bool bank::enough_collateral( name user, asset amount, asset collateral ) {
+    trustfund fund( _code, _code.value );
+    const auto& item = fund.get( user.value );
+    eosio_assert ( item.asset >= (item.used + collateral), COLLATERAL_NOT_ENOUGH );// use diffrent error
+
+    config _config( _code, _code.value );
+    const auto& cnf = _config.get( user.value );
+
+    eosio_assert ( item == fund.end(), "YOU HAVENT ANY ASSET" );
+    eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
+}
+
+
 } /// namespace eosbank
 
 
@@ -124,6 +173,9 @@ extern "C" {
             }
             else if( action == name( "setconfig" ).value ) {
                 execute_action( name(receiver), name(code), &eosdoller::setconfig );
+            }
+            else if( action == name( "getloan" ).value ) {
+                execute_action( name(receiver), name(code), &eosdoller::getloan );
             }
         }
     }

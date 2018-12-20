@@ -29,14 +29,6 @@ void bank::init()
 }
 
 
-void bank::is_pausing()
-{
-    config _config(_code, _code.value);
-    const auto& config = _config.get( 0 );
-    eosio_assert( config.pause == false,  "CONTRACT PAUSED.");
-}
-
-
 void bank::setconfig( bool      pause,
                       name      oracleAddress,
                       name      liquidatorAdd,
@@ -228,7 +220,6 @@ void bank::inccollatral( name user, uint64_t loanid, asset quantity )
 }
 
 
-// TODO SHOULD CALL FROM OUR TOKEN
 void bank::settleloan( name user, uint64_t loanid, asset amount )
 {
     require_auth(user);
@@ -254,7 +245,6 @@ void bank::settleloan( name user, uint64_t loanid, asset amount )
     float payback = item.collateral_amount.amount * amount.amount / item.amount.amount;
     asset paybackEOS = asset(payback, EOS_SYMBOL);
 
-    // burn token for user
     action(
         permission_level{ get_self(),"active"_n },
         "myteostoken"_n, // TODO: declare in config
@@ -279,6 +269,36 @@ void bank::settleloan( name user, uint64_t loanid, asset amount )
 }
 
 
+void bank::liquidate(name user, uint64_t loanid)
+{
+    require_auth(user);
+    is_pausing();
+
+    // check for loan exsisted
+    loan _loan( _code, _code.value );
+
+    const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
+
+    config _config( _code, _code.value );
+    const auto& cnf = _config.get( 0 );
+    eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN);
+    eosio_assert( (item.collateral_amount.amount * cnf.eosPrice) < (item.amount.amount * cnf.depositRate), ENOUGH_COLLATERAL );
+
+    auto iterator = _loan.find( loanid );
+    _loan.modify(iterator, _code, [&]( auto& row ) {
+        row.state = UNDER_LIQUIDATION;
+    });
+
+    action(
+        permission_level{ get_self(),"active"_n },
+        "liquidator"_n, // TODO: declare in config
+        "startliquidat"_n,
+        std::make_tuple( get_self(), loanid, item.collateral_amount, item.amount )
+    ).send();
+
+}
+
+
 void bank::enough_collateral( name user, asset amount, asset collateral ) {
     trustfund fund( _code, _code.value );
     const auto& item = fund.get( user.value, "YOU HAVENT ANY ASSET" );
@@ -289,6 +309,14 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
     eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount.amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
 }
 
+void bank::is_pausing()
+{
+    config _config(_code, _code.value);
+    const auto& config = _config.get( 0 );
+    eosio_assert( config.pause == false,  "CONTRACT PAUSED.");
+}
+
+
 } /// namespace eosbank
 
 
@@ -296,6 +324,11 @@ extern "C" {
     void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
         if (action == "transfer"_n.value && code == "eosio.token"_n.value) {
             eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::bank::geteos);
+        }
+        else if (action == "transfer"_n.value && code == "myteostoken"_n.value){
+            if( action == eosio::name( "getmyt" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getmyt );
+            }
         }
         else if ( code == "eosbank"_n.value ) { // code name should set in configs
             if( action == eosio::name( "depositeos" ).value ) {
@@ -313,11 +346,11 @@ extern "C" {
             else if( action == eosio::name( "inccollatral" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::inccollatral );
             }
-            else if( action == eosio::name( "getmyt" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getmyt );
-            }
             else if( action == eosio::name( "depositmyt" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::depositmyt );
+            }
+            else if( action == eosio::name( "liquidate" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::liquidate );
             }
         }
     }

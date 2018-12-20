@@ -11,6 +11,13 @@ bank::bank(name receiver, name code, datastream<const char*> ds): contract(recei
 }
 
 
+void bank::test(name user, asset amount){
+    require_auth(user);
+    asset a = asset(amount.amount, EOS_SYMBOL);
+    eosio::print("___", amount, a);
+}
+
+
 void bank::init()
 {
     config _config(_code, _code.value);
@@ -70,6 +77,7 @@ void bank::geteos( name    from,
                    string  memo)
 {
     require_auth(from);
+    is_pausing();
 
     if ( from == get_self() )
         return;
@@ -90,6 +98,7 @@ void bank::chargeasset( name    from,
                         asset   quantity)
 {
     require_auth( get_self() );
+    is_pausing();
 
     trustfund fund( _code, _code.value );
     auto iterator = fund.find( from.value );
@@ -112,6 +121,7 @@ void bank::getloan( name user,
                     asset collateral)
 {
     require_auth( user );
+    is_pausing();
 
     enough_collateral( user, amount, collateral );
     // TODO: check for correct symbol
@@ -146,15 +156,15 @@ void bank::getloan( name user,
 void bank::inccollatral( name user, uint64_t loanid, asset amount )
 {
     require_auth(user);
+    is_pausing();
 
-    // check for loan exsisted
+
     loan _loan( _code, _code.value );
     auto iterator = _loan.find( loanid );
-    eosio_assert ( iterator != _loan.end(), "LOAN NOT FOUND" );
 
     // check for loan owner and state
-    const auto& item = _loan.get( loanid );
-    eosio_assert ( item.id == loanid, ONLY_LOAN_OWNER );
+    const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
+    eosio_assert ( item.debtor == user, ONLY_LOAN_OWNER );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN );
 
     // check for enoght collatral in trust fund
@@ -171,6 +181,50 @@ void bank::inccollatral( name user, uint64_t loanid, asset amount )
     _loan.modify(iterator, _code, [&]( auto& row ) {
         row.collateralAmount += amount;
     });
+}
+
+
+void bank::settleloan( name user, uint64_t loanid, asset amount )
+{
+    require_auth(user);
+    is_pausing();
+
+    // check for loan exsisted
+    loan _loan( _code, _code.value );
+    auto iterator = _loan.find( loanid );
+
+    // check for loan owner and state
+    const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
+    // eosio_assert ( item.debtor == user, ONLY_LOAN_OWNER );
+    eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN );
+    eosio_assert ( item.amount <= amount, INVALID_AMOUNT );
+
+    float payback = item.collateralAmount.amount * amount.amount / item.amount.amount;
+    asset paybackEOS = asset(payback, EOS_SYMBOL);
+    // TODO: check if statment
+
+    // burn token for user
+    action(
+        permission_level{ get_self(),"active"_n },
+        "myteostoken"_n, // TODO: declare in config
+        "retire"_n,
+        std::make_tuple( amount, std::string("LOAN BURN") )
+    ).send();
+
+    _loan.modify(iterator, _code, [&]( auto& row ) {
+        row.collateralAmount -= paybackEOS;
+        row.amount -= amount;
+        if ( row.amount.amount == 0 )
+            row.state = SETTLED;
+    });
+
+    // transfer eos for user
+    action(
+        permission_level{ get_self(),"active"_n },
+        "eosio.token"_n, // TODO: declare in config
+        "transfer"_n,
+        std::make_tuple( get_self(), user, paybackEOS, std::string("LOAN ISSUED") )
+    ).send();
 }
 
 

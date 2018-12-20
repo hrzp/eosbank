@@ -22,6 +22,9 @@ namespace eosio {
                datastream  <const char*> ds);
 
          [[eosio::action]]
+         void test(name user, asset amount);
+
+         [[eosio::action]]
          void setconfig( bool      pause,
                          name      oracleAddress,
                          name      liquidatorAdd,
@@ -48,6 +51,11 @@ namespace eosio {
          void inccollatral( name user,
                                  uint64_t loanid,
                                  asset amount);
+
+         [[eosio::action]]
+         void settleloan( name user,
+                          uint64_t loanid,
+                          asset amount);
 
 
       private:

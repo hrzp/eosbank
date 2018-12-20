@@ -17,6 +17,10 @@ namespace eosio {
       public:
          using contract::contract;
 
+         bank( name        receiver,
+               name        code,
+               datastream  <const char*> ds);
+
          [[eosio::action]]
          void setconfig( bool      pause,
                          name      oracleAddress,
@@ -49,7 +53,6 @@ namespace eosio {
       private:
          #define MYT_SYMBOL symbol( "MYT", 4 )
          #define EOS_SYMBOL symbol( "EOS", 4 )
-         float eosPrice; // for global usage
          const char *INVALID_ADDRESS = "INVALID_ADDRESS";
          const char *ONLY_ORACLES = "ONLY_ORACLE";
          const char *INVALID_AMOUNT = "INVALID_AMOUNT";
@@ -111,6 +114,7 @@ namespace eosio {
          void init();
          void is_pausing();
          void enough_collateral( name user, asset amount, asset collateral );
+
 
    };
 

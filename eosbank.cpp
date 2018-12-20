@@ -1,16 +1,14 @@
 
 #include <eosbank/eosbank.hpp>
 #include <eosiolib/asset.hpp>
+#include <eosiolib/print.hpp>
 
 namespace eosio {
 
-// eosbank::eosbank(  name        receiver,
-//           name        code,
-//           datastream  <const char*> ds):
-//           contract( receiver, code, ds )
-// {
-//   init();
-// }
+
+bank::bank(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
+    // init();
+}
 
 
 void bank::init()
@@ -20,7 +18,6 @@ void bank::init()
     eosio_assert( iterator != _config.end(),  "CONFIG NOT SET");
 
     const auto& item = _config.get( 0 );
-    bank::eosPrice = item.eosPrice;
     // TODO: check config
 }
 
@@ -199,7 +196,7 @@ extern "C" {
         if (action == "transfer"_n.value && code == "eosio.token"_n.value) {
             eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::bank::geteos);
         }
-        else if ( code == "eosbankzloan"_n.value ) { // code name should set in configs
+        else if ( code == "eosbank"_n.value ) { // code name should set in configs
             if( action == eosio::name( "chargeasset" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::chargeasset );
             }
@@ -208,6 +205,9 @@ extern "C" {
             }
             else if( action == eosio::name( "getloan" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getloan );
+            }
+            else if( action == eosio::name( "test" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::test );
             }
             else if( action == eosio::name( "inccollatral" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::inccollatral );

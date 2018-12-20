@@ -33,14 +33,24 @@ namespace eosio {
                          uint32_t  LIQUIDATION_DURATION);
 
          [[eosio::action]]
-         void chargeasset( name   from,
-                           asset  quantity);
+         void depositeos( name   from,
+                          asset  quantity);
 
          [[eosio::action]]
          void geteos( name   from,
                       name   to,
                       asset  quantity,
                       string memo);
+
+         [[eosio::action]]
+         void getmyt( name   from,
+                      name   to,
+                      asset  quantity,
+                      string memo);
+
+         [[eosio::action]]
+         void depositmyt( name   from,
+                          asset  amount);
 
          [[eosio::action]]
          void getloan( name   user,
@@ -87,7 +97,7 @@ namespace eosio {
          struct [[eosio::table]] loan_table {
             uint64_t id;
             name     debtor;
-            asset    collateralAmount;
+            asset    collateral_amount;
             asset    amount;
             uint8_t  state;
 
@@ -96,8 +106,8 @@ namespace eosio {
 
          struct [[eosio::table]] trust_fund {
             name     user;
-            asset    fund;
-            asset    used;
+            asset    eos_fund;
+            asset    myt_fund;
 
             uint64_t primary_key() const { return user.value; }
          };

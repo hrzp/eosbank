@@ -289,7 +289,6 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
     eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount.amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
 }
 
-
 } /// namespace eosbank
 
 

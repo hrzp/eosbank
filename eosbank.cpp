@@ -299,6 +299,32 @@ void bank::liquidate(name user, uint64_t loanid)
 }
 
 
+void bank::liquidated( uint64_t loanid, asset amount, name buyer )
+{
+    require_auth("onlyLiquidator"_n);
+    is_pausing();
+
+    // check for loan exsisted
+    loan _loan( _code, _code.value );
+
+    const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
+    auto iterator = _loan.find( loanid );
+    _loan.modify(iterator, _code, [&]( auto& row ) {
+        row.state = LIQUIDATED;
+        row.amount = asset(0, MYT_SYMBOL);
+        row.collateral_amount -= amount;
+    });
+
+    // transfer eos for buyer
+    action(
+        permission_level{ get_self(),"active"_n },
+        "eosio.token"_n, // TODO: declare in config
+        "transfer"_n,
+        std::make_tuple( get_self(), buyer, amount, std::string("LOAN LIQUIDATED") )
+    ).send();
+}
+
+
 void bank::enough_collateral( name user, asset amount, asset collateral ) {
     trustfund fund( _code, _code.value );
     const auto& item = fund.get( user.value, "YOU HAVENT ANY ASSET" );
@@ -308,6 +334,7 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
     const auto& cnf = _config.get( 0 );
     eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount.amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
 }
+
 
 void bank::is_pausing()
 {

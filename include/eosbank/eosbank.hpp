@@ -71,6 +71,11 @@ namespace eosio {
          void liquidate( name       user,
                          uint64_t   loanid);
 
+         [[eosio::action]]
+         void liquidated( uint64_t  loanId,
+                          asset     amount,
+                          name buyer);
+
 
       private:
          #define MYT_SYMBOL symbol( "MYT", 4 )

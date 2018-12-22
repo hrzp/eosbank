@@ -322,6 +322,14 @@ void bank::liquidated( uint64_t loanid, asset amount, name buyer )
         "transfer"_n,
         std::make_tuple( get_self(), buyer, amount, std::string("LOAN LIQUIDATED") )
     ).send();
+
+    // burn the tokens
+    action(
+        permission_level{ get_self(),"active"_n },
+        "myteostoken"_n, // TODO: declare in config
+        "retire"_n,
+        std::make_tuple( amount, std::string("LOAN BURN") )
+    ).send();
 }
 
 

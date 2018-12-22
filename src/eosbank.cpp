@@ -11,13 +11,6 @@ bank::bank(name receiver, name code, datastream<const char*> ds): contract(recei
 }
 
 
-void bank::test(name user, asset amount){
-    require_auth(user);
-    asset a = asset(amount.amount, EOS_SYMBOL);
-    eosio::print("___", amount, a);
-}
-
-
 void bank::init()
 {
     config _config(_code, _code.value);
@@ -374,9 +367,6 @@ extern "C" {
             }
             else if( action == eosio::name( "getloan" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getloan );
-            }
-            else if( action == eosio::name( "test" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::test );
             }
             else if( action == eosio::name( "inccollatral" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::inccollatral );

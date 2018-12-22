@@ -22,9 +22,6 @@ namespace eosio {
                datastream  <const char*> ds);
 
          [[eosio::action]]
-         void test(name user, asset amount);
-
-         [[eosio::action]]
          void setconfig( bool      pause,
                          name      oracleAddress,
                          name      liquidatorAdd,

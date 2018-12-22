@@ -21,12 +21,20 @@ namespace eosio {
                name        code,
                datastream  <const char*> ds);
 
+         [[eosio::action]]
+         void withdraw( name user );
+
+         [[eosio::action]]
+         void startliq( name  eosbank,
+                        uint64_t loanid,
+                        asset    collatral,
+                        asset    loan);
 
       private:
          #define MYT_SYMBOL symbol( "MYT", 4 )
          #define EOS_SYMBOL symbol( "EOS", 4 )
          const char *INVALID_ADDRESS =          "INVALID_ADDRESS";
-         const char *ONLY_ETHER_BANK =          "ONLY_ETHER_BANK";
+         const char *ONLY_EOS_BANK =            "ONLY_EOS_BANK";
          const char *NO_DEPOSIT =               "NO_DEPOSIT";
          const char *INVALID_AMOUNT =           "INVALID_AMOUNT";
          const char *NOT_ACTIVE_LIQUIDATION =   "NOT_ACTIVE_LIQUIDATION";
@@ -49,7 +57,7 @@ namespace eosio {
          };
 
 
-         struct [[eosio::table]] liquidation {
+         struct [[eosio::table]] liquidation_tb {
             uint64_t       loanid;
             asset          collateral;
             asset          amount;
@@ -73,11 +81,12 @@ namespace eosio {
            ACTIVE = 0,
            FINISHED,
            FAILED
-         }
+         };
 
          typedef eosio::multi_index< "config"_n, config_table > config;
-         typedef eosio::multi_index< "deposits"_n, deposits_table > deposits;
-         typedef eosio::multi_index< "trustfund"_n, trust_fund > trustfund;
+         typedef eosio::multi_index< "liquidations"_n, liquidation_tb > liquidations;
+         typedef eosio::multi_index< "deposits"_n, deposit > deposits;
+
 
          void init();
          void is_pausing();

@@ -25,10 +25,14 @@ namespace eosio {
          void withdraw( name user );
 
          [[eosio::action]]
-         void startliq( name  eosbank,
+         void startliq( name     eosbank,
                         uint64_t loanid,
                         asset    collatral,
                         asset    loan);
+
+         [[eosio::action]]
+         void stopliq( name      user,
+                       uint64_t  liquidationid);
 
 
       private:

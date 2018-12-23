@@ -50,13 +50,13 @@ void liq::withdraw( name user)
 }
 
 
-void liquidator::startliq( name 	eosbank,
-						   uint64_t loanid,
-						   asset 	collatral,
-						   asset 	loan)
+void liq::startliq( name        eosbank,
+				    uint64_t    loanid,
+					asset 	    collateral,
+					asset 	    loan)
 {
 	eosio_assert ( eosbank == "eosbank"_n, ONLY_EOS_BANK);
-	eosio_assert( collatral.amount > 0, INVALID_AMOUNT );
+	eosio_assert( collateral.amount > 0, INVALID_AMOUNT );
 	eosio_assert( loan.amount > 0, INVALID_AMOUNT );
 
     liquidations liquidation( _code, _code.value );
@@ -71,14 +71,43 @@ void liquidator::startliq( name 	eosbank,
     uint32_t end_time = start_time + bank.liquidationDuration;
 
     liquidation.emplace(_code, [&]( auto& row ) {
-        row.loanid = loanid;
-        row.collatral = collatral;
-        row.amount = amount;
-        row.start_time = start_time;
-        row.end_time = end_time;
-        row.state = ACTIVE;
+        row.loanid =        loanid;
+        row.collateral =     collateral;
+        row.amount =        loan;
+        row.start_time =    start_time;
+        row.end_time =      end_time;
+        row.state =         ACTIVE;
     });
 }
+
+
+void liq::stopliq( name user, uint64_t liquidationid)
+{
+    require_auth(user);
+    is_pausing();
+    liquidations liquidation( _code, _code.value );
+
+    const auto& item = liquidation.get( liquidationid , "WRONG ID");
+    eosio_assert ( item.end_time <= now(), OPEN_LIQUIDATION );
+    eosio_assert ( item.best_bid.amount != 0, NO_BID );
+    eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LIQUIDATION );
+
+    auto iterator = liquidation.find( liquidationid );
+    liquidation.modify(iterator, _code, [&]( auto& row ) {
+        row.state = FINISHED;
+    });
+
+    //INFO: we'll have burn tokens in eosbank smart contract
+
+    action(
+        permission_level{ get_self(),"active"_n },
+        "eosbank"_n, // TODO: declare in config
+        "liquidated"_n,
+        std::make_tuple( item.loanid, item.best_bid, item.best_bider )
+    ).send();
+
+}
+
 
 } /// namespace eosliquidator
 

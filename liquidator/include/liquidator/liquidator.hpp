@@ -13,11 +13,11 @@ namespace eosio {
 
    using std::string;
 
-   class [[eosio::contract("liquidator")]] liquidator : public contract {
+   class [[eosio::contract("liquidator")]] liq : public contract {
       public:
          using contract::contract;
 
-         liquidator( name        receiver,
+         liq( name        receiver,
                name        code,
                datastream  <const char*> ds);
 
@@ -29,6 +29,7 @@ namespace eosio {
                         uint64_t loanid,
                         asset    collatral,
                         asset    loan);
+
 
       private:
          #define MYT_SYMBOL symbol( "MYT", 4 )

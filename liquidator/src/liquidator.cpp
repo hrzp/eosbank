@@ -2,28 +2,29 @@
 #include <liquidator/liquidator.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/print.hpp>
+#include <eosiolib/time.hpp>
 
 namespace eosio {
 
 
-liquidator::liquidator(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
+liq::liq(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
     // init();
 }
 
 
-void liquidator::init()
+void liq::init()
 {
 
 }
 
 
-void liquidator::is_pausing()
+void liq::is_pausing()
 {
 
 }
 
 
-void liquidator::withdraw( name user)
+void liq::withdraw( name user)
 {
 	require_auth( user );
 	is_pausing();
@@ -57,39 +58,44 @@ void liquidator::startliq( name 	eosbank,
 	eosio_assert ( eosbank == "eosbank"_n, ONLY_EOS_BANK);
 	eosio_assert( collatral.amount > 0, INVALID_AMOUNT );
 	eosio_assert( loan.amount > 0, INVALID_AMOUNT );
+
+    liquidations liquidation( _code, _code.value );
+    config configs ( eosbank, eosbank.value ); // Read from eosbank
+
+    const auto& bank = configs.get( 0 , "BANK NOT CONFIG YET");
+
+    auto iterator = liquidation.find( loanid );
+    eosio_assert ( iterator == liquidation.end(), "Duplicated loan id for liquidation" );
+
+    uint32_t start_time = now();
+    uint32_t end_time = start_time + bank.liquidationDuration;
+
+    liquidation.emplace(_code, [&]( auto& row ) {
+        row.loanid = loanid;
+        row.collatral = collatral;
+        row.amount = amount;
+        row.start_time = start_time;
+        row.end_time = end_time;
+        row.state = ACTIVE;
+    });
 }
-
-    // function startLiquidation(
-    //     uint256 _loanId,
-    //     uint256 _collateralAmount,
-    //     uint256 _loanAmount
-    // )
-    //     external
-    //     whenNotPaused
-    //     onlyEtherBankSC
-    //     throwIfEqualToZero(_collateralAmount)
-    //     throwIfEqualToZero(_loanAmount)
-    // {
-    //     uint256 startTime = now;
-    //     uint256 endTime = startTime + bank.liquidationDuration();
-    //     uint256 liquidationId = ++lastLiquidationId;
-    //     liquidations[liquidationId].loanId = _loanId;
-    //     liquidations[liquidationId].collateralAmount = _collateralAmount;
-    //     liquidations[liquidationId].loanAmount = _loanAmount;
-    //     liquidations[liquidationId].startTime = startTime;
-    //     liquidations[liquidationId].endTime = endTime;
-    //     liquidations[liquidationId].state = LiquidationState.ACTIVE;
-    //     emit StartLiquidation(liquidationId, _loanId, _collateralAmount, _loanAmount, startTime, endTime);
-    // }
-
-
 
 } /// namespace eosliquidator
 
 
 extern "C" {
     void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
-
+        if (action == "transfer"_n.value && code == "eosio.token"_n.value) {
+            // eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::bank::geteos);
+        }
+        else if ( code == "liquidator"_n.value ) { // code name should set in configs
+            if( action == eosio::name( "startliq" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::startliq );
+            }
+            else if( action == eosio::name( "withdraw" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::withdraw );
+            }
+        }
     }
 }
 

@@ -64,19 +64,17 @@ void liq::startliq( name        eosbank,
 
     const auto& bank = configs.get( 0 , "BANK NOT CONFIG YET");
 
-    auto iterator = liquidation.find( loanid );
-    eosio_assert ( iterator == liquidation.end(), "Duplicated loan id for liquidation" );
-
     uint32_t start_time = now();
     uint32_t end_time = start_time + bank.liquidationDuration;
 
     liquidation.emplace(_code, [&]( auto& row ) {
-        row.loanid =        loanid;
-        row.collateral =     collateral;
-        row.amount =        loan;
-        row.start_time =    start_time;
-        row.end_time =      end_time;
-        row.state =         ACTIVE;
+        row.liquidationid =     liquidation.available_primary_key();
+        row.loanid =            loanid;
+        row.collateral =        collateral;
+        row.amount =            loan;
+        row.start_time =        start_time;
+        row.end_time =          end_time;
+        row.state =             ACTIVE;
     });
 }
 
@@ -109,6 +107,23 @@ void liq::stopliq( name user, uint64_t liquidationid)
 }
 
 
+void liq::palcebid( name user, uint64_t liquidationid, asset bid )
+{
+    require_auth(user);
+    is_pausing();
+    liquidations liquidation( _code, _code.value );
+    deposits deposit( _code, _code.value );
+
+    const auto& item = liquidation.get( liquidationid , "WRONG ID");
+    const auto& applicant = deposit.get( user.value , "NO FUND FOR BID");
+    eosio_assert ( applicant.asset >= bid, INSUFFICIENT_FUNDS );
+    eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LIQUIDATION );
+
+    auto iterator = liquidation.find( liquidationid );
+    // Complete this function
+
+}
+
 } /// namespace eosliquidator
 
 
@@ -123,6 +138,9 @@ extern "C" {
             }
             else if( action == eosio::name( "withdraw" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::withdraw );
+            }
+            else if( action == eosio::name( "palcebid" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::palcebid );
             }
         }
     }

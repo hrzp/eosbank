@@ -31,8 +31,10 @@ namespace eosio {
                         asset    loan);
 
          [[eosio::action]]
-         void stopliq( name      user,
-                       uint64_t  liquidationid);
+         void stopliq( name user, uint64_t  liquidationid);
+
+         [[eosio:action]]
+         void palcebid( name user, uint64_t liquidationid, asset bid );
 
 
       private:
@@ -63,6 +65,7 @@ namespace eosio {
 
 
          struct [[eosio::table]] liquidation_tb {
+            uint64_t       liquidationid;
             uint64_t       loanid;
             asset          collateral;
             asset          amount;

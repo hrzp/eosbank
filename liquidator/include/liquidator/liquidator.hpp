@@ -60,7 +60,6 @@ namespace eosio {
          const char *INADEQUATE_BIDDING =       "INADEQUATE_BIDDING";
          const char *INSUFFICIENT_FUNDS =       "INSUFFICIENT_FUNDS";
 
-
          struct [[eosio::table]] config_table {
             uint64_t id;
             bool     pause;
@@ -72,7 +71,6 @@ namespace eosio {
 
             uint64_t primary_key() const { return id; }
          };
-
 
          struct [[eosio::table]] liquidation_tb {
             uint64_t       liquidationid;

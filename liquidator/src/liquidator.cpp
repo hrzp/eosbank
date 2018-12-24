@@ -32,7 +32,7 @@ void liq::withdraw( name user)
     deposits deposit( _code, _code.value );
 
     const auto& item = deposit.get( user.value, NO_DEPOSIT );
-    eosio_assert ( item.amount.amount > 0, NO_DEPOSIT);
+    eosio_assert ( 0 < item.amount.amount, NO_DEPOSIT);
 
     auto iterator = deposit.find( user.value );
     deposit.modify(iterator, _code, [&]( auto& row ) {
@@ -55,9 +55,10 @@ void liq::startliq( name        eosbank,
 					asset 	    collateral,
 					asset 	    loan)
 {
+    int min = 0;
 	eosio_assert ( eosbank == "eosbank"_n, ONLY_EOS_BANK);
-	eosio_assert( collateral.amount > 0, INVALID_AMOUNT );
-	eosio_assert( loan.amount > 0, INVALID_AMOUNT );
+	eosio_assert( min < collateral.amount, INVALID_AMOUNT );
+	eosio_assert( min < loan.amount, INVALID_AMOUNT );
 
     liquidations liquidation( _code, _code.value );
     config configs ( eosbank, eosbank.value ); // Read from eosbank
@@ -68,13 +69,13 @@ void liq::startliq( name        eosbank,
     uint32_t end_time = start_time + bank.liquidationDuration;
 
     liquidation.emplace(_code, [&]( auto& row ) {
-        row.liquidationid =     liquidation.available_primary_key();
-        row.loanid =            loanid;
-        row.collateral =        collateral;
-        row.amount =            loan;
-        row.start_time =        start_time;
-        row.end_time =          end_time;
-        row.state =             ACTIVE;
+        row.liquidationid   = liquidation.available_primary_key();
+        row.loanid          = loanid;
+        row.collateral      = collateral;
+        row.amount          = loan;
+        row.start_time      = start_time;
+        row.end_time        = end_time;
+        row.state           = ACTIVE;
     });
 }
 
@@ -86,7 +87,7 @@ void liq::stopliq( name user, uint64_t liquidationid)
     liquidations liquidation( _code, _code.value );
 
     const auto& item = liquidation.get( liquidationid , "WRONG ID");
-    eosio_assert ( item.end_time <= now(), OPEN_LIQUIDATION );
+    eosio_assert ( now() > item.end_time, OPEN_LIQUIDATION );
     eosio_assert ( item.best_bid.amount != 0, NO_BID );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LIQUIDATION );
 
@@ -117,7 +118,7 @@ void liq::getmyt( name    from,
     is_pausing();
 
     if ( from == get_self() )
-        return; // TODO: duble check this
+        return;
 
     if ( quantity.symbol != MYT_SYMBOL )
         return;
@@ -135,7 +136,7 @@ void liq::getmyt( name    from,
 void liq::depositmyt( name    from,
                       asset   amount)
 {
-    require_auth( get_self() ); // TODO: duble check for args
+    require_auth( get_self() );
     is_pausing();
 
     deposits deposit( _code, _code.value );
@@ -212,6 +213,3 @@ extern "C" {
         }
     }
 }
-
-
-// EOSIO_DISPATCH( eosio::liquidator, (geteos))

@@ -18,8 +18,8 @@ namespace eosio {
          using contract::contract;
 
          liq( name        receiver,
-               name        code,
-               datastream  <const char*> ds);
+              name        code,
+              datastream  <const char*> ds);
 
          [[eosio::action]]
          void withdraw( name user );
@@ -33,8 +33,18 @@ namespace eosio {
          [[eosio::action]]
          void stopliq( name user, uint64_t  liquidationid);
 
-         [[eosio:action]]
+         [[eosio::action]]
          void palcebid( name user, uint64_t liquidationid, asset bid );
+
+         [[eosio::action]]
+         void getmyt( name   from,
+                      name   to,
+                      asset  quantity,
+                      string memo);
+
+         [[eosio::action]]
+         void depositmyt( name   from,
+                          asset  amount);
 
 
       private:

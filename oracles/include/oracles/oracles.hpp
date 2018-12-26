@@ -15,36 +15,16 @@ namespace eosio {
 
    class [[eosio::contract("oracles")]] oracles : public contract {
       public:
-         using contract::contract;
+        using contract::contract;
 
-         oracles( name        receiver,
-                  name        code,
-                  datastream  <const char*> ds);
+        oracles( name        receiver,
+              name        code,
+              datastream  <const char*> ds);
 
-         [[eosio::action]]
-         void withdraw( name user );
+        void setscore( name account, uint64_t score );
 
-         [[eosio::action]]
-         void startliq( name     eosbank,
-                        uint64_t loanid,
-                        asset    collatral,
-                        asset    loan);
-
-         [[eosio::action]]
-         void stopliq( name user, uint64_t  liquidationid);
-
-         [[eosio::action]]
-         void palcebid( name user, uint64_t liquidationid, asset bid );
-
-         [[eosio::action]]
-         void getmyt( name   from,
-                      name   to,
-                      asset  quantity,
-                      string memo);
-
-         [[eosio::action]]
-         void depositmyt( name   from,
-                          asset  amount);
+        [[eosio::action]]
+        void vote( name user, uint8_t type, uint64_t value );
 
 
       private:
@@ -71,34 +51,25 @@ namespace eosio {
 
         struct [[eosio::table]] vote_tb {
             uint64_t    id;
-            uint64_t    voting_no;
-
-            uint64_t primary_key() const { return id; }
-        };
-
-        struct [[eosio::table]] voting_tb {
-            uint64_t    id;
+            uint8_t     type;
             uint64_t    sum;
-            uint64_t    sum_socres;
-            uint64_t    no;
+            uint64_t    account_score;
 
             uint64_t primary_key() const { return id; }
         };
 
         struct [[eosio::table]] oracle_tb {
+            name        id;
             name        account;
             uint64_t    score;
             bool        is_active;
 
-            uint64_t primary_key() const { return account.value; }
+            uint64_t primary_key() const { return id.value; }
         };
 
-
-
         typedef eosio::multi_index< "config"_n, config_table > config;
-        typedef eosio::multi_index< "vote"_n, vote_tb > vote;
-        typedef eosio::multi_index< "voting"_n, voting_tb > voting;
-        typedef eosio::multi_index< "oracles"_n, oracle_tb > oracles;
+        typedef eosio::multi_index< "votes"_n, vote_tb > votes;
+        typedef eosio::multi_index< "oracle"_n, oracle_tb > oracle;
         typedef eosio::multi_index< "recruiting"_n, recruiting_tb > recruiting;
 
         void init();

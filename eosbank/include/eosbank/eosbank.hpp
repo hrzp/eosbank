@@ -95,7 +95,7 @@ namespace eosio {
             name     liquidatorAdd;
             float    eosPrice;
             float    depositRate;
-            uint64_t liquidationDuration; // better to be in uint32
+            float    liquidationDuration; // better to be in uint32
 
             uint64_t primary_key() const { return id; }
          };

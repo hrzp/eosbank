@@ -21,13 +21,23 @@ namespace eosio {
                name        code,
                datastream  <const char*> ds);
 
+         void initconfig( name     oracles,
+                         name     liquidator,
+                         float    eosPrice,
+                         float    depositRate);
+
          [[eosio::action]]
-         void setconfig( bool      pause,
-                         name      oracleAddress,
-                         name      liquidatorAdd,
-                         float     eosPrice,
-                         float     depositRate,
-                         uint32_t  LIQUIDATION_DURATION);
+         void setoracle( name address );
+
+         [[eosio::action]]
+         void setliqaddr( name address );
+
+         [[eosio::action]]
+         void setpause( bool value );
+
+         [[eosio::action]]
+         void setconfig( uint8_t    pause,
+                         float      value);
 
          [[eosio::action]]
          void depositeos( name   from,
@@ -95,7 +105,7 @@ namespace eosio {
             name     liquidatorAdd;
             float    eosPrice;
             float    depositRate;
-            float    liquidationDuration; // better to be in uint32
+            float    liquidationDuration;
 
             uint64_t primary_key() const { return id; }
          };

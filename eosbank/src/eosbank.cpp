@@ -22,37 +22,85 @@ void bank::init()
 }
 
 
-void bank::setconfig( bool      pause,
-                      name      oracleAddress,
-                      name      liquidatorAdd,
-                      float     eosPrice,
-                      float     depositRate,
-                      uint32_t  liquidationDuration)
+void bank::initconfig( name     oracles,
+                       name     liquidator,
+                       float    eosPrice,
+                       float    depositRate)
 {
-    require_auth(get_self());
+    require_auth( get_self() );
     config _config(_code, _code.value);
     auto iterator = _config.find( 0 );
+
     if( iterator == _config.end() ) {
         _config.emplace(_code, [&]( auto& row ) {
             row.id = 0;
-            row.pause = pause;
-            row.oracleAddress = oracleAddress;
-            row.liquidatorAdd = liquidatorAdd;
+            row.pause = false;
+            row.oracleAddress = oracles;
+            row.liquidatorAdd = liquidator;
             row.eosPrice = eosPrice;
             row.depositRate = depositRate;
-            row.liquidationDuration = liquidationDuration;
+            row.liquidationDuration = 3600;
         });
     }
-    else {
-        _config.modify(iterator, _code, [&]( auto& row ) {
-            row.pause = pause;
-            row.oracleAddress = oracleAddress;
-            row.liquidatorAdd = liquidatorAdd;
-            row.eosPrice = eosPrice;
-            row.depositRate = depositRate;
-            row.liquidationDuration = liquidationDuration;
-        });
-    }
+}
+
+
+void bank::setoracle( name address )
+{
+    require_auth( get_self() );
+    config _config(_code, _code.value);
+    auto iterator = _config.find( 0 );
+
+    _config.modify(iterator, _code, [&]( auto& row ) {
+        row.oracleAddress = address;
+    });
+}
+
+
+void bank::setliqaddr( name address )
+{
+    require_auth( get_self() );
+    config _config(_code, _code.value);
+    auto iterator = _config.find( 0 );
+
+    _config.modify(iterator, _code, [&]( auto& row ) {
+        row.liquidatorAdd = address;
+    });
+}
+
+
+void bank::setpause( bool value )
+{
+    require_auth( get_self() );
+    config _config(_code, _code.value);
+    auto iterator = _config.find( 0 );
+
+    _config.modify(iterator, _code, [&]( auto& row ) {
+        row.pause = value;
+    });
+}
+
+
+void bank::setconfig( uint8_t   type,
+                      float     value)
+{
+    require_auth("oracles"_n); // TODO: should read from config
+    config _config(_code, _code.value);
+    auto iterator = _config.find( 0 );
+
+    _config.modify(iterator, _code, [&]( auto& row ) {
+        switch (type) {
+            case  EOS_PRICE:
+                row.eosPrice = value;
+                break;
+            case DEPOSIT_RATE:
+                row.depositRate = value;
+                break;
+            case LIQUIDATION_DURATION:
+                row.liquidationDuration = value;
+                break;
+        }
+    });
 }
 
 

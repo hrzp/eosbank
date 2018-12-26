@@ -140,6 +140,11 @@ void liq::depositmyt( name    from,
     require_auth( get_self() );
     is_pausing();
 
+    const char *data =          "INVALID_ADDRESS";
+    sha1 calc_hash;
+    sha1( data, 10, &calc_hash );
+    print("*** * ***");
+
     deposits deposit( _code, _code.value );
     auto iterator = deposit.find( from.value );
     if( iterator == deposit.end() ) {

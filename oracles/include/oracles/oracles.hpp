@@ -18,8 +18,8 @@ namespace eosio {
         using contract::contract;
 
         oracles( name        receiver,
-              name        code,
-              datastream  <const char*> ds);
+                 name        code,
+                 datastream  <const char*> ds);
 
         void setscore( name account, uint64_t score );
 
@@ -52,7 +52,7 @@ namespace eosio {
         struct [[eosio::table]] vote_tb {
             uint64_t    id;
             uint8_t     type;
-            uint64_t    sum;
+            float       sum;
             uint64_t    account_score;
 
             uint64_t primary_key() const { return id; }

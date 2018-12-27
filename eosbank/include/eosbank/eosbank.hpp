@@ -21,6 +21,7 @@ namespace eosio {
                name        code,
                datastream  <const char*> ds);
 
+         [[eosio::action]]
          void initconfig( name     oracles,
                          name     liquidator,
                          float    eosPrice,

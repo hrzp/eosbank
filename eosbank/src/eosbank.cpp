@@ -7,18 +7,13 @@ namespace eosio {
 
 
 bank::bank(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
-    // init();
+    init();
 }
 
 
 void bank::init()
 {
-    config _config(_code, _code.value);
-    auto iterator = _config.find( 0 );
-    eosio_assert( iterator != _config.end(),  "CONFIG NOT SET");
 
-    const auto& item = _config.get( 0 );
-    // TODO: check config
 }
 
 
@@ -39,7 +34,7 @@ void bank::initconfig( name     oracles,
             row.liquidatorAdd = liquidator;
             row.eosPrice = eosPrice;
             row.depositRate = depositRate;
-            row.liquidationDuration = 3600;
+            row.liquidationDuration = 7200; // in second
         });
     }
 }
@@ -412,6 +407,18 @@ extern "C" {
             }
             else if( action == eosio::name( "setconfig" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setconfig );
+            }
+            else if( action == eosio::name( "initconfig" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::initconfig );
+            }
+            else if( action == eosio::name( "setpause" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setpause );
+            }
+            else if( action == eosio::name( "setliqaddr" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setliqaddr );
+            }
+            else if( action == eosio::name( "setoracle" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setoracle );
             }
             else if( action == eosio::name( "getloan" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getloan );

@@ -384,7 +384,7 @@ void bank::is_pausing()
 {
     config _config(_code, _code.value);
     const auto& config = _config.get( 0 );
-    eosio_assert( config.pause == false,  "CONTRACT PAUSED.");
+    eosio_assert( config.pause != true,  "CONTRACT PAUSED.");
 }
 
 

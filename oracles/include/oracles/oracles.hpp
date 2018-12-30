@@ -21,11 +21,11 @@ namespace eosio {
                  name        code,
                  datastream  <const char*> ds);
 
+        [[eosio::action]]
         void setscore( name account, uint64_t score );
 
         [[eosio::action]]
-        void vote( name user, uint8_t type, uint64_t value );
-
+        void vote( name user, uint8_t type, float value );
 
       private:
         #define EOD_SYMBOL symbol( "EOD", 4 )

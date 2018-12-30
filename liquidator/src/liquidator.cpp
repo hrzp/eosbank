@@ -10,18 +10,18 @@ using namespace eosio;
 namespace eosio {
 
 
-liq::liq(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
+liquidator::liquidator(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
     init();
 }
 
 
-void liq::init()
+void liquidator::init()
 {
 
 }
 
 
-void liq::withdraw( name user)
+void liquidator::withdraw( name user)
 {
 	require_auth( user );
 
@@ -45,7 +45,7 @@ void liq::withdraw( name user)
 }
 
 
-void liq::startliq( name        eosbank,
+void liquidator::startliq( name        eosbank,
 				    uint64_t    loanid,
 					asset 	    collateral,
 					asset 	    loan)
@@ -75,7 +75,7 @@ void liq::startliq( name        eosbank,
 }
 
 
-void liq::stopliq( name         user,
+void liquidator::stopliq( name         user,
                    uint64_t     liquidationid)
 {
     require_auth(user);
@@ -104,7 +104,7 @@ void liq::stopliq( name         user,
 
 
 
-void liq::geteod( name    from,
+void liquidator::geteod( name    from,
                   name    to,
                   asset   quantity,
                   string  memo)
@@ -127,7 +127,7 @@ void liq::geteod( name    from,
 
 
 
-void liq::depositeod( name    from,
+void liquidator::depositeod( name    from,
                       asset   amount)
 {
     require_auth( get_self() );
@@ -148,7 +148,7 @@ void liq::depositeod( name    from,
 }
 
 
-void liq::palcebid( name        user,
+void liquidator::palcebid( name        user,
                     uint64_t    liquidationid,
                     asset bid)
 {
@@ -192,20 +192,20 @@ extern "C" {
         if( code == self ) {
           switch(action) {
             case name("startliq").value:
-              execute_action(name(receiver), name(code), &eosio::bank::startliq);
+              execute_action(name(receiver), name(code), &eosio::liquidator::startliq);
               break;
             case name("withdraw").value:
-              execute_action(name(receiver), name(code), &eosio::bank::withdraw);
+              execute_action(name(receiver), name(code), &eosio::liquidator::withdraw);
               break;
             case name("palcebid").value:
-              execute_action(name(receiver), name(code), &eosio::bank::palcebid);
+              execute_action(name(receiver), name(code), &eosio::liquidator::palcebid);
               break;
             case name("depositeod").value:
-              execute_action(name(receiver), name(code), &eosio::bank::depositeod);
+              execute_action(name(receiver), name(code), &eosio::liquidator::depositeod);
               break;
           }
         }
         else if( code == "eodtoken1111"_n.value && action == "transfer"_n.value )
-            eosio::execute_action(name(receiver), name(code), &eosio::liq::geteod);
+            eosio::execute_action(name(receiver), name(code), &eosio::liquidator::geteod);
     }
 };

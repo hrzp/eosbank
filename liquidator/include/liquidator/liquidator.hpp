@@ -13,11 +13,11 @@ namespace eosio {
 
    using std::string;
 
-   class [[eosio::contract("liquidator")]] liq : public contract {
+   class [[eosio::contract("liquidator")]] liquidator : public contract {
       public:
          using contract::contract;
 
-         liq( name        receiver,
+         liquidator( name        receiver,
               name        code,
               datastream  <const char*> ds);
 

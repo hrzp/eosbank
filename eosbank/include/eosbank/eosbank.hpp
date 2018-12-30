@@ -28,13 +28,7 @@ namespace eosio {
                          float    depositRate);
 
          [[eosio::action]]
-         void setoracle( name address );
-
-         [[eosio::action]]
-         void setliqaddr( name address );
-
-         [[eosio::action]]
-         void setpause( bool value );
+         void reset( );
 
          [[eosio::action]]
          void setconfig( uint8_t    pause,
@@ -101,7 +95,6 @@ namespace eosio {
 
          struct [[eosio::table]] config_table {
             uint64_t id;
-            bool     pause;
             name     oracleAddress;
             name     liquidatorAdd;
             float    eosPrice;

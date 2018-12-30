@@ -26,54 +26,19 @@ void bank::initconfig( name     oracles,
     config _config(_code, _code.value);
     auto iterator = _config.find( 0 );
 
-    if( iterator == _config.end() ) {
-        _config.emplace(_code, [&]( auto& row ) {
-            row.id = 0;
-            row.pause = false;
-            row.oracleAddress = oracles;
-            row.liquidatorAdd = liquidator;
-            row.eosPrice = eosPrice;
-            row.depositRate = depositRate;
-            row.liquidationDuration = 7200; // in second
-        });
-    }
-}
-
-
-void bank::setoracle( name address )
-{
-    require_auth( get_self() );
-    config _config(_code, _code.value);
-    auto iterator = _config.find( 0 );
-
-    _config.modify(iterator, _code, [&]( auto& row ) {
-        row.oracleAddress = address;
+    if( iterator != _config.end() ) {
+        return;
+    };
+    _config.emplace(_code, [&]( auto& row ) {
+        row.id = 0;
+        row.oracleAddress = oracles;
+        row.liquidatorAdd = liquidator;
+        row.eosPrice = eosPrice;
+        row.depositRate = depositRate;
+        row.liquidationDuration = 7200; // in second
     });
 }
 
-
-void bank::setliqaddr( name address )
-{
-    require_auth( get_self() );
-    config _config(_code, _code.value);
-    auto iterator = _config.find( 0 );
-
-    _config.modify(iterator, _code, [&]( auto& row ) {
-        row.liquidatorAdd = address;
-    });
-}
-
-
-void bank::setpause( bool value )
-{
-    require_auth( get_self() );
-    config _config(_code, _code.value);
-    auto iterator = _config.find( 0 );
-
-    _config.modify(iterator, _code, [&]( auto& row ) {
-        row.pause = value;
-    });
-}
 
 
 void bank::setconfig( uint8_t   type,
@@ -105,7 +70,6 @@ void bank::geteos( name    from,
                    string  memo)
 {
     require_auth(from);
-    is_pausing();
 
     if ( from == get_self() )
         return;
@@ -123,10 +87,9 @@ void bank::geteos( name    from,
 
 
 void bank::depositeos( name    from,
-                        asset   quantity)
+                       asset   quantity)
 {
     require_auth( get_self() );
-    is_pausing();
 
     trustfund fund( _code, _code.value );
     auto iterator = fund.find( from.value );
@@ -380,11 +343,18 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
 }
 
 
-void bank::is_pausing()
+void bank::reset()
 {
+    // config _config(_code, _code.value);
+    // const auto& confixg = _config.get( 0 , "NO CONFIG 0 KEY");
+    // eosio_assert( config.pause != true,  "CONTRACT PAUSED.");
+
+    require_auth( get_self() );
     config _config(_code, _code.value);
-    const auto& config = _config.get( 0 );
-    eosio_assert( config.pause != true,  "CONTRACT PAUSED.");
+    auto iterator = _config.find( 0 );
+
+    _config.erase(iterator);
+
 }
 
 
@@ -408,11 +378,11 @@ extern "C" {
             else if( action == eosio::name( "setconfig" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setconfig );
             }
+            else if( action == eosio::name( "reset" ).value ) {
+                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::reset );
+            }
             else if( action == eosio::name( "initconfig" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::initconfig );
-            }
-            else if( action == eosio::name( "setpause" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setpause );
             }
             else if( action == eosio::name( "setliqaddr" ).value ) {
                 execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setliqaddr );

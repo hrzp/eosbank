@@ -362,49 +362,42 @@ void bank::reset()
 
 
 extern "C" {
-    void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
-        if (action == "transfer"_n.value && code == "eosio.token"_n.value) {
-            eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::bank::geteos);
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
+        auto self = receiver;
+        if( code == self ) {
+          switch(action) {
+            case name("depositeos").value:
+              execute_action(name(receiver), name(code), &eosio::bank::depositeos);
+              break;
+            case name("setconfig").value:
+              execute_action(name(receiver), name(code), &eosio::bank::setconfig);
+              break;
+            case name("reset").value:
+              execute_action(name(receiver), name(code), &eosio::bank::reset);
+              break;
+            case name("getloan").value:
+              execute_action(name(receiver), name(code), &eosio::bank::getloan);
+              break;
+            case name("inccollatral").value:
+              execute_action(name(receiver), name(code), &eosio::bank::inccollatral);
+              break;
+            case name("liquidate").value:
+              execute_action(name(receiver), name(code), &eosio::bank::liquidate);
+              break;
+            case name("depositmyt").value:
+              execute_action(name(receiver), name(code), &eosio::bank::depositmyt);
+              break;
+            case name("initconfig").value:
+              execute_action(name(receiver), name(code), &eosio::bank::initconfig);
+              break;
+          }
         }
-        else if (action == "transfer"_n.value && code == "myteostoken"_n.value){
-            if( action == eosio::name( "getmyt" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getmyt );
-            }
-        }
-        else if ( code == "eosbank"_n.value ) { // code name should set in configs
-            if( action == eosio::name( "depositeos" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::depositeos );
-            }
-            else if( action == eosio::name( "setconfig" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setconfig );
-            }
-            else if( action == eosio::name( "reset" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::reset );
-            }
-            else if( action == eosio::name( "initconfig" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::initconfig );
-            }
-            else if( action == eosio::name( "setliqaddr" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setliqaddr );
-            }
-            else if( action == eosio::name( "setoracle" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::setoracle );
-            }
-            else if( action == eosio::name( "getloan" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::getloan );
-            }
-            else if( action == eosio::name( "inccollatral" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::inccollatral );
-            }
-            else if( action == eosio::name( "depositmyt" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::depositmyt );
-            }
-            else if( action == eosio::name( "liquidate" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::bank::liquidate );
-            }
-        }
+        else if( code == "eosio.token"_n.value && action == "transfer"_n.value )
+            eosio::execute_action(name(receiver), name(code), &eosio::bank::geteos);
+        else if( code == "myteostoken"_n.value && action == "transfer"_n.value )
+            execute_action( name(receiver), name(code), &eosio::bank::getmyt );
     }
-}
+};
 
 
 // EOSIO_DISPATCH( eosio::bank, (geteos))

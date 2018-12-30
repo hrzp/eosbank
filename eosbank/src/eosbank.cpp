@@ -22,8 +22,9 @@ void bank::init()
 
 void bank::initconfig( name     oracles,
                        name     liquidator,
-                       float    eosPrice,
-                       float    depositRate)
+                       float    eos_price,
+                       float    deposit_rate,
+                       float    liquidation_duration)
 {
     require_auth( get_self() );
     config _config(_code, _code.value);
@@ -34,14 +35,13 @@ void bank::initconfig( name     oracles,
     };
     _config.emplace(_code, [&]( auto& row ) {
         row.id = 0;
-        row.oracleAddress = oracles;
-        row.liquidatorAdd = liquidator;
-        row.eosPrice = eosPrice;
-        row.depositRate = depositRate;
-        row.liquidationDuration = 7200; // in second
+        row.oracle_address = oracles;
+        row.liquidator_add = liquidator;
+        row.eos_price = eos_price;
+        row.deposit_rate = deposit_rate;
+        row.liquidation_duration = liquidation_duration; // in second
     });
 }
-
 
 
 void bank::setconfig( uint8_t   type,
@@ -54,13 +54,13 @@ void bank::setconfig( uint8_t   type,
     _config.modify(iterator, _code, [&]( auto& row ) {
         switch (type) {
             case  EOS_PRICE:
-                row.eosPrice = value;
+                row.eos_price = value;
                 break;
             case DEPOSIT_RATE:
-                row.depositRate = value;
+                row.deposit_rate = value;
                 break;
             case LIQUIDATION_DURATION:
-                row.liquidationDuration = value;
+                row.liquidation_duration = value;
                 break;
         }
     });
@@ -77,7 +77,7 @@ void bank::geteos( name    from,
     if ( from == get_self() )
         return;
 
-    if ( quantity.symbol != EOS_SYMBOL )
+    if ( quantity.symbol != EOS_SYMBOL ) // it just for testnet
         return;
 
     action(
@@ -110,7 +110,7 @@ void bank::depositeos( name    from,
 }
 
 
-void bank::getmyt( name    from,
+void bank::geteod( name    from,
                    name    to,
                    asset   quantity,
                    string  memo)
@@ -120,19 +120,19 @@ void bank::getmyt( name    from,
     if ( from == get_self() )
         return;
 
-    if ( quantity.symbol != MYT_SYMBOL )
+    if ( quantity.symbol != EOD_SYMBOL )
         return;
 
     action(
         permission_level{ get_self(), "active"_n },
         get_self(),
-        "depositmyt"_n,
+        "depositeod"_n,
         std::make_tuple( from, quantity )
     ).send();
 }
 
 
-void bank::depositmyt( name    from,
+void bank::depositeod( name    from,
                        asset   amount)
 {
     require_auth( get_self() );
@@ -142,27 +142,26 @@ void bank::depositmyt( name    from,
     if( iterator == fund.end() ) {
         fund.emplace(_code, [&]( auto& row ) {
             row.user = from;
-            row.myt_fund = amount;
+            row.eod_fund = amount;
         });
     }
     else {
         fund.modify(iterator, _code, [&]( auto& row ) {
-            row.myt_fund += amount;
+            row.eod_fund += amount;
         });
     }
 }
 
 
-void bank::getloan( name user,
-                    asset amount,
-                    asset collateral)
+void bank::getloan( name    user,
+                    asset   amount,
+                    asset   collateral)
 {
     require_auth( user );
 
-    enough_collateral( user, amount, collateral );
     // TODO: check for correct symbol
+    enough_collateral( user, amount, collateral );
 
-    // update the user used value of her/his collaterals
     trustfund fund( _code, _code.value );
     auto iterator = fund.find( user.value );
     fund.modify(iterator, _code, [&]( auto& row ) {
@@ -173,44 +172,43 @@ void bank::getloan( name user,
     loan _loan( _code, _code.value );
     _loan.emplace(_code, [&]( auto& row ) {
         row.id = _loan.available_primary_key();
-        row.debtor = user;
-        row.collateral_amount = collateral;
-        row.amount = amount;
-        row.state = ACTIVE;
+        row.debtor              = user;
+        row.collateral_amount   = collateral;
+        row.amount              = amount;
+        row.state               = ACTIVE;
     });
 
     // issue token for user
     action(
         permission_level{ get_self(),"active"_n },
-        "myteostoken"_n, // TODO: declare in config
+        "eodtoken1111"_n, // TODO: declare in config
         "issue"_n,
         std::make_tuple( user, amount, std::string("LOAN ISSUED") )
     ).send();
 }
 
 
-void bank::inccollatral( name user, uint64_t loanid, asset quantity )
+void bank::incrsclltrl( name user,
+                        uint64_t loanid,
+                        asset quantity)
 {
     require_auth(user);
 
     loan _loan( _code, _code.value );
 
-    // check for loan owner and state
     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
     eosio_assert ( item.debtor == user, ONLY_LOAN_OWNER );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN );
 
-    // check for enoght collatral in trust fund
     trustfund fund( _code, _code.value );
     const auto& fund_item = fund.get( user.value );
     eosio_assert ( fund_item.eos_fund >=  quantity, COLLATERAL_NOT_ENOUGH );
 
-    auto edit_fund = fund.find( user.value );
-    fund.modify(edit_fund, _code, [&]( auto& row ) {
+    auto assets = fund.find( user.value );
+    fund.modify(assets, _code, [&]( auto& row ) {
         row.eos_fund -= quantity;
     });
 
-    // Add collatral to loan
     auto iterator = _loan.find( loanid );
     _loan.modify(iterator, _code, [&]( auto& row ) {
         row.collateral_amount += quantity;
@@ -218,25 +216,25 @@ void bank::inccollatral( name user, uint64_t loanid, asset quantity )
 }
 
 
-void bank::settleloan( name user, uint64_t loanid, asset amount )
+void bank::settleloan( name         user,
+                       uint64_t     loanid,
+                       asset        amount)
 {
     require_auth(user);
 
-    // check for loan exsisted
     loan _loan( _code, _code.value );
     auto iterator = _loan.find( loanid );
 
-    // check for loan owner and state
     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN );
     eosio_assert ( item.amount <= amount, INVALID_AMOUNT );
 
     trustfund fund( _code, _code.value );
     const auto& fund_item = fund.get( user.value, "YOU HAVENT ANY ASSET" );
-    eosio_assert ( fund_item.myt_fund >= amount, COLLATERAL_NOT_ENOUGH );
+    eosio_assert ( fund_item.eod_fund >= amount, COLLATERAL_NOT_ENOUGH );
     auto fund_itr = fund.find( user.value );
     fund.modify(fund_itr, _code, [&]( auto& row ) {
-        row.myt_fund -= amount;
+        row.eod_fund -= amount;
     });
 
     float payback = item.collateral_amount.amount * amount.amount / item.amount.amount;
@@ -244,7 +242,7 @@ void bank::settleloan( name user, uint64_t loanid, asset amount )
 
     action(
         permission_level{ get_self(),"active"_n },
-        "myteostoken"_n, // TODO: declare in config
+        "eodtoken1111"_n, // TODO: declare in config
         "retire"_n,
         std::make_tuple( amount, std::string("LOAN BURN") )
     ).send();
@@ -266,19 +264,18 @@ void bank::settleloan( name user, uint64_t loanid, asset amount )
 }
 
 
-void bank::liquidate(name user, uint64_t loanid)
+void bank::liquidate( name          user,
+                      uint64_t      loanid)
 {
     require_auth(user);
 
-    // check for loan exsisted
     loan _loan( _code, _code.value );
-
     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
 
     config _config( _code, _code.value );
     const auto& cnf = _config.get( 0 );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN);
-    eosio_assert( (item.collateral_amount.amount * cnf.eosPrice) < (item.amount.amount * cnf.depositRate), ENOUGH_COLLATERAL );
+    eosio_assert( (item.collateral_amount.amount * cnf.eos_price) < (item.amount.amount * cnf.deposit_rate), ENOUGH_COLLATERAL );
 
     auto iterator = _loan.find( loanid );
     _loan.modify(iterator, _code, [&]( auto& row ) {
@@ -295,33 +292,33 @@ void bank::liquidate(name user, uint64_t loanid)
 }
 
 
-void bank::liquidated( uint64_t loanid, asset amount, name buyer )
+void bank::liquidated( uint64_t     loanid,
+                       asset        amount,
+                       name         winer)
 {
-    require_auth("onlyLiquidator"_n);
+    require_auth("liquidator"_n); // TODO: should read from config
 
-    // check for loan exsisted
     loan _loan( _code, _code.value );
 
     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
     auto iterator = _loan.find( loanid );
     _loan.modify(iterator, _code, [&]( auto& row ) {
         row.state = LIQUIDATED;
-        row.amount = asset(0, MYT_SYMBOL);
+        row.amount = asset(0, EOD_SYMBOL);
         row.collateral_amount -= amount;
     });
 
-    // transfer eos for buyer
     action(
         permission_level{ get_self(),"active"_n },
         "eosio.token"_n, // TODO: declare in config
         "transfer"_n,
-        std::make_tuple( get_self(), buyer, amount, std::string("LOAN LIQUIDATED") )
+        std::make_tuple( get_self(), winer, amount, std::string("LOAN LIQUIDATED") )
     ).send();
 
     // burn the tokens
     action(
         permission_level{ get_self(),"active"_n },
-        "myteostoken"_n, // TODO: declare in config
+        "eodtoken1111"_n, // TODO: declare in config
         "retire"_n,
         std::make_tuple( amount, std::string("LOAN BURN") )
     ).send();
@@ -335,16 +332,13 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
 
     config _config( _code, _code.value );
     const auto& cnf = _config.get( 0 );
-    eosio_assert ( (collateral.amount * cnf.eosPrice) >= (amount.amount * cnf.depositRate), COLLATERAL_NOT_ENOUGH);
+    eosio_assert ( (collateral.amount * cnf.eos_price) >= (amount.amount * cnf.deposit_rate), COLLATERAL_NOT_ENOUGH);
 }
 
 
 void bank::reset()
 {
-    // config _config(_code, _code.value);
-    // const auto& confixg = _config.get( 0 , "NO CONFIG 0 KEY");
-    // eosio_assert( config.pause != true,  "CONTRACT PAUSED.");
-
+    // just for test
     require_auth( get_self() );
     config _config(_code, _code.value);
     auto iterator = _config.find( 0 );
@@ -374,14 +368,14 @@ extern "C" {
             case name("getloan").value:
               execute_action(name(receiver), name(code), &eosio::bank::getloan);
               break;
-            case name("inccollatral").value:
-              execute_action(name(receiver), name(code), &eosio::bank::inccollatral);
+            case name("incrsclltrl").value:
+              execute_action(name(receiver), name(code), &eosio::bank::incrsclltrl);
               break;
             case name("liquidate").value:
               execute_action(name(receiver), name(code), &eosio::bank::liquidate);
               break;
-            case name("depositmyt").value:
-              execute_action(name(receiver), name(code), &eosio::bank::depositmyt);
+            case name("depositeod").value:
+              execute_action(name(receiver), name(code), &eosio::bank::depositeod);
               break;
             case name("initconfig").value:
               execute_action(name(receiver), name(code), &eosio::bank::initconfig);
@@ -390,8 +384,8 @@ extern "C" {
         }
         else if( code == "eosio.token"_n.value && action == "transfer"_n.value )
             eosio::execute_action(name(receiver), name(code), &eosio::bank::geteos);
-        else if( code == "myteostoken"_n.value && action == "transfer"_n.value )
-            execute_action( name(receiver), name(code), &eosio::bank::getmyt );
+        else if( code == "eodtoken1111"_n.value && action == "transfer"_n.value )
+            execute_action( name(receiver), name(code), &eosio::bank::geteod );
     }
 };
 

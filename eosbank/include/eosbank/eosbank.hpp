@@ -23,9 +23,10 @@ namespace eosio {
 
          [[eosio::action]]
          void initconfig( name     oracles,
-                         name     liquidator,
-                         float    eosPrice,
-                         float    depositRate);
+                          name     liquidator,
+                          float    eos_price,
+                          float    deposit_rate,
+                          float    liquidation_duration);
 
          [[eosio::action]]
          void reset( );
@@ -45,13 +46,13 @@ namespace eosio {
                       string memo);
 
          [[eosio::action]]
-         void getmyt( name   from,
+         void geteod( name   from,
                       name   to,
                       asset  quantity,
                       string memo);
 
          [[eosio::action]]
-         void depositmyt( name   from,
+         void depositeod( name   from,
                           asset  amount);
 
          [[eosio::action]]
@@ -60,9 +61,9 @@ namespace eosio {
                       asset collateral);
 
          [[eosio::action]]
-         void inccollatral( name user,
-                                 uint64_t loanid,
-                                 asset amount);
+         void incrsclltrl( name user,
+                           uint64_t loanid,
+                           asset amount);
 
          [[eosio::action]]
          void settleloan( name user,
@@ -80,7 +81,7 @@ namespace eosio {
 
 
       private:
-         #define MYT_SYMBOL symbol( "MYT", 4 )
+         #define EOD_SYMBOL symbol( "EOD", 4 )
          #define EOS_SYMBOL symbol( "EOS", 4 )
          const char *INVALID_ADDRESS = "INVALID_ADDRESS";
          const char *ONLY_ORACLES = "ONLY_ORACLE";
@@ -95,11 +96,11 @@ namespace eosio {
 
          struct [[eosio::table]] config_table {
             uint64_t id;
-            name     oracleAddress;
-            name     liquidatorAdd;
-            float    eosPrice;
-            float    depositRate;
-            float    liquidationDuration;
+            name     oracle_address;
+            name     liquidator_add;
+            float    eos_price;
+            float    deposit_rate;
+            float    liquidation_duration;
 
             uint64_t primary_key() const { return id; }
          };
@@ -117,7 +118,7 @@ namespace eosio {
          struct [[eosio::table]] trust_fund {
             name     user;
             asset    eos_fund;
-            asset    myt_fund;
+            asset    eod_fund;
 
             uint64_t primary_key() const { return user.value; }
          };

@@ -3,13 +3,15 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/print.hpp>
 #include <eosiolib/time.hpp>
+#include <eosiolib/eosio.hpp>
+
+using namespace eosio;
 
 namespace eosio {
 
 
 liq::liq(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
-    // init();
-    // TODO: check for configs
+    init();
 }
 
 
@@ -19,16 +21,9 @@ void liq::init()
 }
 
 
-void liq::is_pausing()
-{
-
-}
-
-
 void liq::withdraw( name user)
 {
 	require_auth( user );
-	is_pausing();
 
     deposits deposit( _code, _code.value );
 
@@ -37,13 +32,12 @@ void liq::withdraw( name user)
 
     auto iterator = deposit.find( user.value );
     deposit.modify(iterator, _code, [&]( auto& row ) {
-        row.amount = asset(0, MYT_SYMBOL);
+        row.amount = asset(0, EOD_SYMBOL);
     });
 
-    // transfer eos for buyer
     action(
         permission_level{ get_self(),"active"_n },
-        "myteostoken"_n, // TODO: declare in config
+        "eodtoken1111"_n, // TODO: declare in config
         "transfer"_n,
         std::make_tuple( get_self(), user, item.amount, std::string("WITHDRAW") )
     ).send();
@@ -58,8 +52,8 @@ void liq::startliq( name        eosbank,
 {
     int min = 0;
 	eosio_assert ( eosbank == "eosbank"_n, ONLY_EOS_BANK);
-	eosio_assert( min < collateral.amount, INVALID_AMOUNT );
-	eosio_assert( min < loan.amount, INVALID_AMOUNT );
+	eosio_assert ( min < collateral.amount, INVALID_AMOUNT );
+	eosio_assert ( min < loan.amount, INVALID_AMOUNT );
 
     liquidations liquidation( _code, _code.value );
     config configs ( eosbank, eosbank.value ); // Read from eosbank
@@ -67,7 +61,7 @@ void liq::startliq( name        eosbank,
     const auto& bank = configs.get( 0 , "BANK NOT CONFIG YET");
 
     uint32_t start_time = now();
-    uint32_t end_time = start_time + bank.liquidationDuration;
+    uint32_t end_time = start_time + bank.liquidation_duration;
 
     liquidation.emplace(_code, [&]( auto& row ) {
         row.liquidationid   = liquidation.available_primary_key();
@@ -81,10 +75,10 @@ void liq::startliq( name        eosbank,
 }
 
 
-void liq::stopliq( name user, uint64_t liquidationid)
+void liq::stopliq( name         user,
+                   uint64_t     liquidationid)
 {
     require_auth(user);
-    is_pausing();
     liquidations liquidation( _code, _code.value );
 
     const auto& item = liquidation.get( liquidationid , "WRONG ID");
@@ -110,40 +104,33 @@ void liq::stopliq( name user, uint64_t liquidationid)
 
 
 
-void liq::getmyt( name    from,
+void liq::geteod( name    from,
                   name    to,
                   asset   quantity,
                   string  memo)
 {
     require_auth(from);
-    is_pausing();
 
     if ( from == get_self() )
         return;
 
-    if ( quantity.symbol != MYT_SYMBOL )
+    if ( quantity.symbol != EOD_SYMBOL )
         return;
 
     action(
         permission_level{ get_self(), "active"_n },
         get_self(),
-        "depositmyt"_n,
+        "depositeod"_n,
         std::make_tuple( from, quantity )
     ).send();
 }
 
 
 
-void liq::depositmyt( name    from,
+void liq::depositeod( name    from,
                       asset   amount)
 {
     require_auth( get_self() );
-    is_pausing();
-
-    const char *data =          "INVALID_ADDRESS";
-    sha1 calc_hash;
-    sha1( data, 10, &calc_hash );
-    print("*** * ***");
 
     deposits deposit( _code, _code.value );
     auto iterator = deposit.find( from.value );
@@ -161,11 +148,12 @@ void liq::depositmyt( name    from,
 }
 
 
-
-void liq::palcebid( name user, uint64_t liquidationid, asset bid )
+void liq::palcebid( name        user,
+                    uint64_t    liquidationid,
+                    asset bid)
 {
     require_auth(user);
-    is_pausing();
+
     liquidations liquidation( _code, _code.value );
     deposits deposit( _code, _code.value );
 
@@ -199,23 +187,25 @@ void liq::palcebid( name user, uint64_t liquidationid, asset bid )
 
 
 extern "C" {
-    void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
-        if (action == "transfer"_n.value && code == "myteostoken"_n.value) {
-            eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::liq::getmyt);
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
+        auto self = receiver;
+        if( code == self ) {
+          switch(action) {
+            case name("startliq").value:
+              execute_action(name(receiver), name(code), &eosio::bank::startliq);
+              break;
+            case name("withdraw").value:
+              execute_action(name(receiver), name(code), &eosio::bank::withdraw);
+              break;
+            case name("palcebid").value:
+              execute_action(name(receiver), name(code), &eosio::bank::palcebid);
+              break;
+            case name("depositeod").value:
+              execute_action(name(receiver), name(code), &eosio::bank::depositeod);
+              break;
+          }
         }
-        else if ( code == "liquidator"_n.value ) { // code name should set in configs
-            if( action == eosio::name( "startliq" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::startliq );
-            }
-            else if( action == eosio::name( "withdraw" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::withdraw );
-            }
-            else if( action == eosio::name( "palcebid" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::palcebid );
-            }
-            else if( action == eosio::name( "depositmyt" ).value ) {
-                execute_action( eosio::name(receiver), eosio::name(code), &eosio::liq::depositmyt );
-            }
-        }
+        else if( code == "eodtoken1111"_n.value && action == "transfer"_n.value )
+            eosio::execute_action(name(receiver), name(code), &eosio::liq::geteod);
     }
-}
+};

@@ -141,9 +141,7 @@ namespace eosio {
          };
 
          void init();
-         void is_pausing();
          void enough_collateral( name user, asset amount, asset collateral );
-
 
    };
 

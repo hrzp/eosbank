@@ -28,18 +28,17 @@ namespace eosio {
 
 
       private:
-        #define MYT_SYMBOL symbol( "MYT", 4 )
+        #define EOD_SYMBOL symbol( "EOD", 4 )
         #define EOS_SYMBOL symbol( "EOS", 4 )
         const char *INVALID_ADDRESS =          "INVALID_ADDRESS";
 
         struct [[eosio::table]] config_table {
             uint64_t id;
-            bool     pause;
-            name     oracleAddress;
-            name     liquidatorAdd;
-            float    eosPrice;
-            float    depositRate;
-            uint64_t liquidationDuration;
+            name     oracle_address;
+            name     liquidator_add;
+            float    eos_price;
+            float    deposit_rate;
+            float    liquidation_duration;
 
             uint64_t primary_key() const { return id; }
         };

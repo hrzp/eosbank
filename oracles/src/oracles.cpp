@@ -3,14 +3,15 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/print.hpp>
 #include <eosiolib/time.hpp>
-// #include <string>
+#include <eosiolib/eosio.hpp>
+
+using namespace eosio;
 
 namespace eosio {
 
 
 oracles::oracles(name receiver, name code, datastream<const char*> ds): contract(receiver, code, ds){
-    // init();
-    // TODO: check for configs
+    init();
 }
 
 
@@ -20,9 +21,10 @@ void oracles::init()
 }
 
 
-void oracles::setscore( name account, uint64_t score )
+void oracles::setscore( name        account,
+                        uint64_t    score)
 {
-    // TODO: add can recruiting and is pause
+    // TODO: add can recruiting
     require_auth( get_self() );
     oracles oracle( _code, _code.value );
 
@@ -32,9 +34,9 @@ void oracles::setscore( name account, uint64_t score )
     // TODO: check total scores
     if ( person == oracle.end() ) {
         oracle.emplace(_code, [&]( auto& row ) {
-            row.account = account;
-            row.score = score;
-            row.is_active = active_state;
+            row.account     = account;
+            row.score       = score;
+            row.is_active   = active_state;
         });
     }
     else {
@@ -44,19 +46,17 @@ void oracles::setscore( name account, uint64_t score )
                 row.is_active = active_state;
         });
     }
-    //     for (auto itr = deposit.cbegin(); itr != deposit.cend(); itr++) {
-    //       print( itr->amount, "  " );
-    // }
 }
 
 
-void oracles::vote( name user, uint8_t type, float value )
+void oracles::vote( name        user,
+                    uint8_t     type,
+                    float       value)
 {
     require_auth( user );
-    // is_pausing
     oracle oracle( _code, _code.value );
 
-    // check for correct type
+    // TODO: check for correct type
 
     const auto& person = oracle.get( user.value, "No Account Founded" );
     eosio_assert ( person.is_active != false, "Not Active" );
@@ -105,25 +105,22 @@ void oracles::vote( name user, uint8_t type, float value )
         ).send();
 }
 
-
-// void oracles::updateconfig( uint8_t type, value)
-
 } /// namespace eosoracles
 
 
-extern "C" {
-    void apply( uint64_t receiver, uint64_t code, uint64_t action ) {
-        if (action == "transfer"_n.value && code == "myteostoken"_n.value) {
-            // eosio::execute_action(eosio::name(receiver), eosio::name(code), &eosio::liq::getmyt);
-        }
-        else if ( code == "oracles"_n.value ) { // code name should set in configs
-            if (action == "vote"_n.value) {
-                eosio::execute_action( eosio::name(receiver), eosio::name(code), &eosio::oracles::vote );
-            }
-            else if (action=="setscore"_n.value) {
-                eosio::execute_action( eosio::name(receiver), eosio::name(code), &eosio::oracles::setscore );
-            }
 
+extern "C" {
+    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
+        auto self = receiver;
+        if( code == self ) {
+          switch(action) {
+            case name("vote").value:
+              execute_action(name(receiver), name(code), &eosio::bank::vote);
+              break;
+            case name("setscore").value:
+              execute_action(name(receiver), name(code), &eosio::bank::setscore);
+              break;
+          }
         }
     }
-}
+};

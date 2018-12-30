@@ -117,7 +117,6 @@ void bank::getmyt( name    from,
 {
     require_auth(from);
 
-
     if ( from == get_self() )
         return;
 
@@ -137,7 +136,6 @@ void bank::depositmyt( name    from,
                        asset   amount)
 {
     require_auth( get_self() );
-
 
     trustfund fund( _code, _code.value );
     auto iterator = fund.find( from.value );
@@ -160,7 +158,6 @@ void bank::getloan( name user,
                     asset collateral)
 {
     require_auth( user );
-
 
     enough_collateral( user, amount, collateral );
     // TODO: check for correct symbol
@@ -196,7 +193,6 @@ void bank::inccollatral( name user, uint64_t loanid, asset quantity )
 {
     require_auth(user);
 
-
     loan _loan( _code, _code.value );
 
     // check for loan owner and state
@@ -225,7 +221,6 @@ void bank::inccollatral( name user, uint64_t loanid, asset quantity )
 void bank::settleloan( name user, uint64_t loanid, asset amount )
 {
     require_auth(user);
-
 
     // check for loan exsisted
     loan _loan( _code, _code.value );
@@ -275,7 +270,6 @@ void bank::liquidate(name user, uint64_t loanid)
 {
     require_auth(user);
 
-
     // check for loan exsisted
     loan _loan( _code, _code.value );
 
@@ -304,7 +298,6 @@ void bank::liquidate(name user, uint64_t loanid)
 void bank::liquidated( uint64_t loanid, asset amount, name buyer )
 {
     require_auth("onlyLiquidator"_n);
-
 
     // check for loan exsisted
     loan _loan( _code, _code.value );

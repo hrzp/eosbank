@@ -2,6 +2,9 @@
 #include <eosbank/eosbank.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/print.hpp>
+#include <eosiolib/eosio.hpp>
+
+using namespace eosio;
 
 namespace eosio {
 
@@ -113,7 +116,7 @@ void bank::getmyt( name    from,
                    string  memo)
 {
     require_auth(from);
-    is_pausing();
+
 
     if ( from == get_self() )
         return;
@@ -134,7 +137,7 @@ void bank::depositmyt( name    from,
                        asset   amount)
 {
     require_auth( get_self() );
-    is_pausing();
+
 
     trustfund fund( _code, _code.value );
     auto iterator = fund.find( from.value );
@@ -157,7 +160,7 @@ void bank::getloan( name user,
                     asset collateral)
 {
     require_auth( user );
-    is_pausing();
+
 
     enough_collateral( user, amount, collateral );
     // TODO: check for correct symbol
@@ -192,7 +195,7 @@ void bank::getloan( name user,
 void bank::inccollatral( name user, uint64_t loanid, asset quantity )
 {
     require_auth(user);
-    is_pausing();
+
 
     loan _loan( _code, _code.value );
 
@@ -222,7 +225,7 @@ void bank::inccollatral( name user, uint64_t loanid, asset quantity )
 void bank::settleloan( name user, uint64_t loanid, asset amount )
 {
     require_auth(user);
-    is_pausing();
+
 
     // check for loan exsisted
     loan _loan( _code, _code.value );
@@ -271,7 +274,7 @@ void bank::settleloan( name user, uint64_t loanid, asset amount )
 void bank::liquidate(name user, uint64_t loanid)
 {
     require_auth(user);
-    is_pausing();
+
 
     // check for loan exsisted
     loan _loan( _code, _code.value );
@@ -301,7 +304,7 @@ void bank::liquidate(name user, uint64_t loanid)
 void bank::liquidated( uint64_t loanid, asset amount, name buyer )
 {
     require_auth("onlyLiquidator"_n);
-    is_pausing();
+
 
     // check for loan exsisted
     loan _loan( _code, _code.value );

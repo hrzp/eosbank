@@ -25,7 +25,7 @@ namespace eosio {
          void initconfig( name     oracles,
                           name     liquidator,
                           float    eos_price,
-                          float    deposit_rate,
+                          float    collateral_ratio,
                           float    liquidation_duration);
 
          [[eosio::action]]
@@ -99,7 +99,7 @@ namespace eosio {
             name     oracle_address;
             name     liquidator_add;
             float    eos_price;
-            float    deposit_rate;
+            float    collateral_ratio;
             float    liquidation_duration;
 
             uint64_t primary_key() const { return id; }
@@ -136,7 +136,7 @@ namespace eosio {
 
          enum Types {
             EOS_PRICE = 0,
-            DEPOSIT_RATE,
+            COLLATERAL_RATIO,
             LIQUIDATION_DURATION
          };
 

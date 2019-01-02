@@ -23,7 +23,7 @@ void bank::init()
 void bank::initconfig( name     oracles,
                        name     liquidator,
                        float    eos_price,
-                       float    deposit_rate,
+                       float    collateral_ratio,
                        float    liquidation_duration)
 {
     require_auth( get_self() );
@@ -38,7 +38,7 @@ void bank::initconfig( name     oracles,
         row.oracle_address = oracles;
         row.liquidator_add = liquidator;
         row.eos_price = eos_price;
-        row.deposit_rate = deposit_rate;
+        row.collateral_ratio = collateral_ratio;
         row.liquidation_duration = liquidation_duration; // in second
     });
 }
@@ -56,8 +56,8 @@ void bank::setconfig( uint8_t   type,
             case  EOS_PRICE:
                 row.eos_price = value;
                 break;
-            case DEPOSIT_RATE:
-                row.deposit_rate = value;
+            case COLLATERAL_RATIO:
+                row.collateral_ratio = value;
                 break;
             case LIQUIDATION_DURATION:
                 row.liquidation_duration = value;
@@ -275,7 +275,7 @@ void bank::liquidate( name          user,
     config _config( _code, _code.value );
     const auto& cnf = _config.get( 0 );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN);
-    eosio_assert( (item.collateral_amount.amount * cnf.eos_price) < (item.amount.amount * cnf.deposit_rate), ENOUGH_COLLATERAL );
+    eosio_assert( (item.collateral_amount.amount * cnf.eos_price) < (item.amount.amount * cnf.collateral_ratio), ENOUGH_COLLATERAL );
 
     auto iterator = _loan.find( loanid );
     _loan.modify(iterator, _code, [&]( auto& row ) {
@@ -332,7 +332,7 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
 
     config _config( _code, _code.value );
     const auto& cnf = _config.get( 0 );
-    eosio_assert ( (collateral.amount * cnf.eos_price) >= (amount.amount * cnf.deposit_rate), COLLATERAL_NOT_ENOUGH);
+    eosio_assert ( (collateral.amount * cnf.eos_price) >= (amount.amount * cnf.collateral_ratio), COLLATERAL_NOT_ENOUGH);
 }
 
 

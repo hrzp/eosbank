@@ -172,10 +172,10 @@ void bank::getloan( name    user,
     loan _loan( _code, _code.value );
     _loan.emplace(_code, [&]( auto& row ) {
         row.id = _loan.available_primary_key();
-        row.debtor              = user;
-        row.collateral_amount   = collateral;
-        row.amount              = amount;
-        row.state               = ACTIVE;
+        row.debtor          = user;
+        row.collateral      = collateral;
+        row.amount          = amount;
+        row.state           = ACTIVE;
     });
 
     // issue token for user
@@ -211,7 +211,7 @@ void bank::incrsclltrl( name user,
 
     auto iterator = _loan.find( loanid );
     _loan.modify(iterator, _code, [&]( auto& row ) {
-        row.collateral_amount += quantity;
+        row.collateral += quantity;
     });
 }
 
@@ -237,7 +237,7 @@ void bank::settleloan( name         user,
         row.eod_fund -= amount;
     });
 
-    float payback = item.collateral_amount.amount * amount.amount / item.amount.amount;
+    float payback = item.collateral.amount * amount.amount / item.amount.amount;
     asset paybackEOS = asset(payback, EOS_SYMBOL);
 
     action(
@@ -248,7 +248,7 @@ void bank::settleloan( name         user,
     ).send();
 
     _loan.modify(iterator, _code, [&]( auto& row ) {
-        row.collateral_amount -= paybackEOS;
+        row.collateral -= paybackEOS;
         row.amount -= amount;
         if ( row.amount.amount == 0 )
             row.state = SETTLED;
@@ -275,7 +275,7 @@ void bank::liquidate( name          user,
     config _config( _code, _code.value );
     const auto& cnf = _config.get( 0 );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN);
-    eosio_assert( (item.collateral_amount.amount * cnf.eos_price) < (item.amount.amount * cnf.collateral_ratio), ENOUGH_COLLATERAL );
+    eosio_assert( (item.collateral.amount * cnf.eos_price) < (item.amount.amount * cnf.collateral_ratio), ENOUGH_COLLATERAL );
 
     auto iterator = _loan.find( loanid );
     _loan.modify(iterator, _code, [&]( auto& row ) {
@@ -286,7 +286,7 @@ void bank::liquidate( name          user,
         permission_level{ get_self(),"active"_n },
         "liquidator"_n, // TODO: declare in config
         "startliquidat"_n,
-        std::make_tuple( get_self(), loanid, item.collateral_amount, item.amount )
+        std::make_tuple( get_self(), loanid, item.collateral, item.amount )
     ).send();
 
 }
@@ -305,7 +305,7 @@ void bank::liquidated( uint64_t     loanid,
     _loan.modify(iterator, _code, [&]( auto& row ) {
         row.state = LIQUIDATED;
         row.amount = asset(0, EOD_SYMBOL);
-        row.collateral_amount -= amount;
+        row.collateral -= amount;
     });
 
     action(

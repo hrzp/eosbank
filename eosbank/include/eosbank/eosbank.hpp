@@ -108,7 +108,7 @@ namespace eosio {
          struct [[eosio::table]] loan_table {
             uint64_t id;
             name     debtor;
-            asset    collateral_amount;
+            asset    collateral;
             asset    amount;
             uint8_t  state;
 

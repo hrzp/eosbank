@@ -95,7 +95,7 @@ void liquidator::stopliq( name         user,
 
     action(
         permission_level{ get_self(),"active"_n },
-        "eosbank"_n, // TODO: declare in config
+        "eodbank11111"_n, // TODO: declare in config
         "liquidated"_n,
         std::make_tuple( item.loanid, item.best_bid, item.best_bider )
     ).send();

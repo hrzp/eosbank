@@ -96,10 +96,12 @@ void oracles::vote( name        user,
         vote_scores += itr-> account_score;
     }
 
+    // TODO: clear last voting
+
     if ( (total_score / vote_scores) < 2 )
         action(
             permission_level{ get_self(), "active"_n },
-            "eosbank"_n,
+            "eosbank11111"_n,
             "setconfig"_n,
             std::make_tuple( type, float(sum / vote_scores) )
         ).send();

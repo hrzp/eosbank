@@ -47,7 +47,7 @@ void bank::initconfig( name     oracles,
 void bank::setconfig( uint8_t   type,
                       float     value)
 {
-    require_auth("oracles"_n); // TODO: should read from config
+    require_auth("oracles11111"_n); // TODO: should read from config
     config _config(_code, _code.value);
     auto iterator = _config.find( 0 );
 
@@ -100,6 +100,9 @@ void bank::depositeos( name    from,
         fund.emplace(_code, [&]( auto& row ) {
             row.user = from;
             row.eos_fund = quantity;
+            if( row.eod_fund.amount == 0 ){
+                row.eod_fund = asset(0, EOD_SYMBOL);
+            }
         });
     }
     else {
@@ -143,6 +146,9 @@ void bank::depositeod( name    from,
         fund.emplace(_code, [&]( auto& row ) {
             row.user = from;
             row.eod_fund = amount;
+            if( row.eos_fund.amount == 0 ){
+                row.eos_fund = asset(0, EOS_SYMBOL);
+            }
         });
     }
     else {
@@ -188,9 +194,9 @@ void bank::getloan( name    user,
 }
 
 
-void bank::incrsclltrl( name user,
-                        uint64_t loanid,
-                        asset quantity)
+void bank::incrsclltrl( name        user,
+                        uint64_t    loanid,
+                        asset       quantity)
 {
     require_auth(user);
 
@@ -216,6 +222,37 @@ void bank::incrsclltrl( name user,
 }
 
 
+// void bank::decrsclltrl( name        user,
+//                         uint64_t    loanid,
+//                         asset       quantity)
+// {
+//     require_auth(user);
+
+//     loan _loan( _code, _code.value );
+
+//     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
+//     eosio_assert ( item.debtor == user, ONLY_LOAN_OWNER );
+//     eosio_assert ( item.state != UNDER_LIQUIDATION, INVALID_LOAN_STATE );
+
+//     trustfund fund( _code, _code.value );
+
+//     config _config( _code, _code.value );
+//     const auto& cnf = _config.get( 0 );
+//     uint64_t min = item.amount.amount * cnf.collateral_ratio / cfn.eos_price;
+//     eosio_assert ( min <= (item.collateral - quantity), INSUFFICIENT_ALLOWANCE );
+
+//     auto assets = fund.find( user.value );
+//     fund.modify(assets, _code, [&]( auto& row ) {
+//         row.eos_fund -= quantity;
+//     });
+
+//     auto iterator = _loan.find( loanid );
+//     _loan.modify(iterator, _code, [&]( auto& row ) {
+//         row.collateral += quantity;
+//     });
+// }
+
+
 void bank::settleloan( name         user,
                        uint64_t     loanid,
                        asset        amount)
@@ -227,11 +264,11 @@ void bank::settleloan( name         user,
 
     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
     eosio_assert ( item.state == ACTIVE, NOT_ACTIVE_LOAN );
-    eosio_assert ( item.amount <= amount, INVALID_AMOUNT );
+    eosio_assert ( item.amount >= amount, INVALID_AMOUNT );
 
     trustfund fund( _code, _code.value );
     const auto& fund_item = fund.get( user.value, "YOU HAVENT ANY ASSET" );
-    eosio_assert ( fund_item.eod_fund >= amount, COLLATERAL_NOT_ENOUGH );
+    eosio_assert ( fund_item.eod_fund >= amount, "EOD_NOT_ENOUGH" );
     auto fund_itr = fund.find( user.value );
     fund.modify(fund_itr, _code, [&]( auto& row ) {
         row.eod_fund -= amount;
@@ -250,9 +287,11 @@ void bank::settleloan( name         user,
     _loan.modify(iterator, _code, [&]( auto& row ) {
         row.collateral -= paybackEOS;
         row.amount -= amount;
-        if ( row.amount.amount == 0 )
-            row.state = SETTLED;
     });
+
+    if( iterator->amount.amount == 0 ) {
+        _loan.erase(iterator);
+    }
 
     // transfer eos for user
     action(
@@ -284,7 +323,7 @@ void bank::liquidate( name          user,
 
     action(
         permission_level{ get_self(),"active"_n },
-        "liquidator"_n, // TODO: declare in config
+        "liquidator11"_n, // TODO: declare in config
         "startliquidat"_n,
         std::make_tuple( get_self(), loanid, item.collateral, item.amount )
     ).send();
@@ -296,7 +335,7 @@ void bank::liquidated( uint64_t     loanid,
                        asset        amount,
                        name         winer)
 {
-    require_auth("liquidator"_n); // TODO: should read from config
+    require_auth("liquidator11"_n); // TODO: should read from config
 
     loan _loan( _code, _code.value );
 
@@ -343,7 +382,25 @@ void bank::reset()
     config _config(_code, _code.value);
     auto iterator = _config.find( 0 );
 
-    _config.erase(iterator);
+    if (iterator != _config.end())
+        _config.erase(iterator);
+
+    trustfund fund( _code, _code.value );
+
+    auto ite = fund.begin();
+    while(ite != fund.end()) {
+        ite = fund.erase(ite);
+    }
+
+    loan _loan( _code, _code.value );
+    auto ite_loan = _loan.begin();
+    while(ite_loan != _loan.end()) {
+        ite_loan = _loan.erase(ite_loan);
+    }
+
+    // for (auto itr = _loan.cbegin(); itr != _loan.cend(); itr++) {
+    //     _loan.erase(itr);
+    // }
 
 }
 
@@ -367,6 +424,9 @@ extern "C" {
               break;
             case name("getloan").value:
               execute_action(name(receiver), name(code), &eosio::bank::getloan);
+              break;
+            case name("settleloan").value:
+              execute_action(name(receiver), name(code), &eosio::bank::settleloan);
               break;
             case name("incrsclltrl").value:
               execute_action(name(receiver), name(code), &eosio::bank::incrsclltrl);

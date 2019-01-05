@@ -61,8 +61,10 @@ void oracles::vote( name        user,
     const auto& person = _oracle.get( user.value, "No Account Founded" );
     eosio_assert ( person.is_active != false, "Not Active" );
 
-    string u = std::to_string(user.value / 200) + std::to_string(type);
+    string u = std::to_string(user.value) + std::to_string(type);
+    u = u.substr( u.length() - (u.length() / 2),  u.length() );
     uint64_t unique_id =  std::stoull(u);
+    print(user.value,"   ", unique_id, "       ", u);
 
 
     // should check user identifie for solidity

@@ -324,7 +324,7 @@ void bank::liquidate( name          user,
     action(
         permission_level{ get_self(),"active"_n },
         "liquidator11"_n, // TODO: declare in config
-        "startliquidat"_n,
+        "startliq"_n,
         std::make_tuple( get_self(), loanid, item.collateral, item.amount )
     ).send();
 

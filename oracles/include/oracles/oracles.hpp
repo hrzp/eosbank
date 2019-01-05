@@ -58,12 +58,11 @@ namespace eosio {
         };
 
         struct [[eosio::table]] oracle_tb {
-            name        id;
             name        account;
             uint64_t    score;
             bool        is_active;
 
-            uint64_t primary_key() const { return id.value; }
+            uint64_t primary_key() const { return account.value; }
         };
 
         typedef eosio::multi_index< "config"_n, config_table > config;

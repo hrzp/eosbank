@@ -45,13 +45,13 @@ void liquidator::withdraw( name user)
 }
 
 
-void liquidator::startliq( name        eosbank,
-				    uint64_t    loanid,
-					asset 	    collateral,
-					asset 	    loan)
+void liquidator::startliq( name         eosbank,
+				           uint64_t     loanid,
+					       asset 	    collateral,
+					       asset 	    loan)
 {
     int min = 0;
-	eosio_assert ( eosbank == "eosbank"_n, ONLY_EOS_BANK);
+	eosio_assert ( eosbank == "eosbank11111"_n, ONLY_EOS_BANK);
 	eosio_assert ( min < collateral.amount, INVALID_AMOUNT );
 	eosio_assert ( min < loan.amount, INVALID_AMOUNT );
 
@@ -76,7 +76,7 @@ void liquidator::startliq( name        eosbank,
 
 
 void liquidator::stopliq( name         user,
-                   uint64_t     liquidationid)
+                          uint64_t     liquidationid)
 {
     require_auth(user);
     liquidations liquidation( _code, _code.value );
@@ -105,9 +105,9 @@ void liquidator::stopliq( name         user,
 
 
 void liquidator::geteod( name    from,
-                  name    to,
-                  asset   quantity,
-                  string  memo)
+                         name    to,
+                         asset   quantity,
+                         string  memo)
 {
     require_auth(from);
 
@@ -128,7 +128,7 @@ void liquidator::geteod( name    from,
 
 
 void liquidator::depositeod( name    from,
-                      asset   amount)
+                             asset   amount)
 {
     require_auth( get_self() );
 
@@ -148,9 +148,9 @@ void liquidator::depositeod( name    from,
 }
 
 
-void liquidator::palcebid( name        user,
-                    uint64_t    liquidationid,
-                    asset bid)
+void liquidator::palcebid( name         user,
+                           uint64_t     liquidationid,
+                           asset        bid)
 {
     require_auth(user);
 

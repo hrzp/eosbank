@@ -34,7 +34,7 @@ namespace eosio {
          void stopliq( name user, uint64_t  liquidationid);
 
          [[eosio::action]]
-         void palcebid( name user, uint64_t liquidationid, asset bid );
+         void placebid( name user, uint64_t liquidationid, asset bid );
 
          [[eosio::action]]
          void geteod( name   from,
@@ -45,6 +45,12 @@ namespace eosio {
          [[eosio::action]]
          void depositeod( name   from,
                           asset  amount);
+
+         [[eosio::action]]
+         void reset();
+
+         [[eosio::action]]
+         void ch(uint64_t id);
 
 
       private:
@@ -82,7 +88,7 @@ namespace eosio {
             name           best_bider;
             uint8_t        state;
 
-            uint64_t primary_key() const { return loanid; }
+            uint64_t primary_key() const { return liquidationid; }
          };
 
          struct [[eosio::table]] deposit {

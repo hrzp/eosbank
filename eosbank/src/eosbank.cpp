@@ -341,11 +341,14 @@ void bank::liquidated( uint64_t     loanid,
 
     const auto& item = _loan.get( loanid, "LOAN NOT FOUND" );
     auto iterator = _loan.find( loanid );
-    _loan.modify(iterator, _code, [&]( auto& row ) {
-        row.state = LIQUIDATED;
-        row.amount = asset(0, EOD_SYMBOL);
-        row.collateral -= amount;
-    });
+    _loan.erase( iterator );
+
+    action(
+        permission_level{ get_self(),"active"_n },
+        "eodtoken1111"_n, // TODO: declare in config
+        "retire"_n,
+        std::make_tuple( item.amount, std::string("LOAN BURN") )
+    ).send();
 
     action(
         permission_level{ get_self(),"active"_n },
@@ -354,13 +357,6 @@ void bank::liquidated( uint64_t     loanid,
         std::make_tuple( get_self(), winer, amount, std::string("LOAN LIQUIDATED") )
     ).send();
 
-    // burn the tokens
-    action(
-        permission_level{ get_self(),"active"_n },
-        "eodtoken1111"_n, // TODO: declare in config
-        "retire"_n,
-        std::make_tuple( amount, std::string("LOAN BURN") )
-    ).send();
 }
 
 
@@ -433,6 +429,9 @@ extern "C" {
               break;
             case name("liquidate").value:
               execute_action(name(receiver), name(code), &eosio::bank::liquidate);
+              break;
+            case name("liquidated").value:
+              execute_action(name(receiver), name(code), &eosio::bank::liquidated);
               break;
             case name("depositeod").value:
               execute_action(name(receiver), name(code), &eosio::bank::depositeod);

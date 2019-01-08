@@ -32,7 +32,7 @@ namespace eosio {
          void reset( );
 
          [[eosio::action]]
-         void setconfig( uint8_t    pause,
+         void setconfig( uint8_t    type,
                          float      value);
 
          [[eosio::action]]

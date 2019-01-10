@@ -46,12 +46,6 @@ namespace eosio {
          void depositeod( name   from,
                           asset  amount);
 
-         [[eosio::action]]
-         void reset();
-
-         [[eosio::action]]
-         void ch(uint64_t id);
-
 
       private:
          #define EOD_SYMBOL symbol( "EOD", 4 )

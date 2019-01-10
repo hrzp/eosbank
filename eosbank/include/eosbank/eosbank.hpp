@@ -28,8 +28,6 @@ namespace eosio {
                           float    collateral_ratio,
                           float    liquidation_duration);
 
-         [[eosio::action]]
-         void reset( );
 
          [[eosio::action]]
          void setconfig( uint8_t    type,

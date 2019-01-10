@@ -371,36 +371,6 @@ void bank::enough_collateral( name user, asset amount, asset collateral ) {
 }
 
 
-void bank::reset()
-{
-    // just for test
-    require_auth( get_self() );
-    config _config(_code, _code.value);
-    auto iterator = _config.find( 0 );
-
-    if (iterator != _config.end())
-        _config.erase(iterator);
-
-    trustfund fund( _code, _code.value );
-
-    auto ite = fund.begin();
-    while(ite != fund.end()) {
-        ite = fund.erase(ite);
-    }
-
-    loan _loan( _code, _code.value );
-    auto ite_loan = _loan.begin();
-    while(ite_loan != _loan.end()) {
-        ite_loan = _loan.erase(ite_loan);
-    }
-
-    // for (auto itr = _loan.cbegin(); itr != _loan.cend(); itr++) {
-    //     _loan.erase(itr);
-    // }
-
-}
-
-
 } /// namespace eosbank
 
 
@@ -414,9 +384,6 @@ extern "C" {
               break;
             case name("setconfig").value:
               execute_action(name(receiver), name(code), &eosio::bank::setconfig);
-              break;
-            case name("reset").value:
-              execute_action(name(receiver), name(code), &eosio::bank::reset);
               break;
             case name("getloan").value:
               execute_action(name(receiver), name(code), &eosio::bank::getloan);

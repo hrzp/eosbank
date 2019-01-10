@@ -185,35 +185,6 @@ void liquidator::placebid( name         user,
 }
 
 
-void liquidator::reset() // for development test
-{
-    liquidations liqui( _code, _code.value );
-
-    auto ite = liqui.begin();
-    while(ite != liqui.end()) {
-        ite = liqui.erase(ite);
-    }
-
-    deposits deposit( _code, _code.value );
-
-    auto _ite = deposit.begin();
-    while(_ite != deposit.end()) {
-        _ite = deposit.erase(_ite);
-    }
-}
-
-void liquidator::ch(uint64_t id) // for development test
-{
-    liquidations liqui( _code, _code.value );
-
-    auto ite = liqui.find(id);
-
-    liqui.modify(ite, _code, [&]( auto& row ){
-        print(row.collateral);
-        row.state = ACTIVE;
-    });
-}
-
 } /// namespace eosliquidator
 
 
@@ -236,12 +207,6 @@ extern "C" {
               break;
             case name("depositeod").value:
               execute_action(name(receiver), name(code), &eosio::liquidator::depositeod);
-              break;
-            case name("reset").value:
-              execute_action(name(receiver), name(code), &eosio::liquidator::reset);
-              break;
-            case name("ch").value:
-              execute_action(name(receiver), name(code), &eosio::liquidator::ch);
               break;
           }
         }
